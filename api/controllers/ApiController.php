@@ -72,6 +72,14 @@ class ApiController extends \yii\web\Controller
     }
 
     public function afterAction($action, $result) {
+        if ($this->debug) {
+            try {
+                Yii::$app->db->createCommand("INSERT INTO log (log) VALUES ('". json_encode($result) ."')")->execute();
+            } catch (Exception $e) {
+                throw new Exception("Error : ".$e);
+            }
+        }
+
         return parent::afterAction($action, $result);
     }
 }

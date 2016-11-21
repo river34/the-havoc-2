@@ -40,6 +40,12 @@ class MechController extends ApiController
                 Yii::$app->db->createCommand()->truncateTable('triangle')->execute();
                 Yii::$app->db->createCommand("UPDATE map SET mark = 0, player_id = 0, team_id = 0, score = 0, score_rate = 0, is_sent = 0  WHERE mark <> ".Yii::$app->params['mark_core'])->execute();
                 Yii::$app->db->createCommand("UPDATE team SET is_ready = 0, score = 0")->execute();
+/*
+                apcu_store('player'.$grid->player_id, 0);
+                apcu_store('round_team'.$round_id.'player'.$grid->player_id, 0);
+                apcu_store('team'.$grid->team_id, 0);
+                apcu_store('map'.$grid->id, 0);
+                */
             } catch (Exception $e) {
                 throw new Exception("Error : ".$e);
                 $error = true;
@@ -56,6 +62,11 @@ class MechController extends ApiController
                 $result['data']['round_id'] = $round->id;
                 $result['success'] = true;
             }
+        } else if ($last_round && !$last_round->is_start) {
+            $last_round->is_mech_ready = 1;
+            $last_round->save();
+            $result['data']['round_id'] = $last_round->id;
+            $result['success'] = true;
         }
 
         $result['query_time'] = microtime(true) - $this->ini_time;
@@ -184,6 +195,19 @@ class MechController extends ApiController
     // output: (new) grids
     // output: is_timeout
     public function actionUpdate() {
+        $servername = "localhost";
+        $username = "root";
+        $password = "";
+        $dbname = "havoc";
+/*
+        // Create connection
+        $conn = new mysqli_connect($servername, $username, $password, $dbname);
+        // Check connection
+        if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+        }
+*/
+        $result['start_time'] = microtime(true);
         // input
         $round_id = empty($this->params['round_id'])?'':$this->params['round_id'];
         $towers = empty($this->params['towers'])?'':$this->params['towers'];    // grid of the destroyed tower
@@ -216,6 +240,7 @@ class MechController extends ApiController
                         $error = true;
                     }
                 }
+                $result['check_time_1'] = microtime(true) - $result['start_time'];
             }
 
             if (!empty($scores)) {
@@ -223,10 +248,27 @@ class MechController extends ApiController
                     $grid = Map::findOne($element['tower_id']);
                     if ($grid) {
                         try {
-                            Yii::$app->db->createCommand("UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id)->execute();
-                            Yii::$app->db->createCommand("UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round_id ." AND player_id = ".$grid->player_id)->execute();
-                            Yii::$app->db->createCommand("UPDATE team SET score = score + ". $element['score']." WHERE id = ".$grid->team_id)->execute();
-                            Yii::$app->db->createCommand("UPDATE map SET score = score + ". $element['score']. ", score_rate = ". $element['score']." WHERE id = ".$grid->id)->execute();
+
+/*
+                            $sql = "UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id;
+                            $conn->query($sql);
+                            $sql = "UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round_id ." AND player_id = ".$grid->player_id;
+                            $conn->query($sql);
+                            $sql = "UPDATE team SET score = score + ". $element['score']." WHERE id = ".$grid->team_id;
+                            $conn->query($sql);
+                            $sql = "UPDATE map SET score = score + ". $element['score']. ", score_rate = ". $element['score']." WHERE id = ".$grid->id;
+                            $conn->query($sql);
+*/
+                            $result['add_result']=apcu_inc('player'.$grid->player_id, (int)$element['score']);
+                            apcu_inc('round_team'.$round_id.'player'.$grid->player_id, (int)$element['score']);
+                            apcu_inc('team'.$grid->team_id, (int)$element['score']);
+                            apcu_inc('map'.$grid->id, (int)$element['score']);
+
+
+                            // Yii::$app->db->createCommand("UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id)->execute();
+                            // Yii::$app->db->createCommand("UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round_id ." AND player_id = ".$grid->player_id)->execute();
+                            // Yii::$app->db->createCommand("UPDATE team SET score = score + ". $element['score']." WHERE id = ".$grid->team_id)->execute();
+                            // Yii::$app->db->createCommand("UPDATE map SET score = score + ". $element['score']. ", score_rate = ". $element['score']." WHERE id = ".$grid->id)->execute();
                         } catch (Exception $e) {
                             throw new Exception("Error : ".$e);
                             $error = true;
@@ -235,24 +277,28 @@ class MechController extends ApiController
                         $error = true;
                     }
                 }
+                $result['check_time_2'] = microtime(true) - $result['start_time'];
             }
 
-            try {
-                Yii::$app->db->createCommand()->truncateTable('triangle')->execute();
-            } catch (Exception $e) {
-                throw new Exception("Error : ".$e);
-                $error = true;
-            }
+            // try {
+            //     Yii::$app->db->createCommand()->truncateTable('triangle')->execute();
+            // } catch (Exception $e) {
+            //     throw new Exception("Error : ".$e);
+            //     $error = true;
+            // }
 
             if (!empty($triangles)) {
-                try {
-                    foreach ($triangles as $element) {
-                        Yii::$app->db->createCommand("INSERT INTO triangle (a, b, c, team_id) VALUES ('".$element['a']."', '".$element['b']."', '".$element['c']."', ".$element['team_id'].")")->execute();
-                    }
-                } catch (Exception $e) {
-                    throw new Exception("Error : ".$e);
-                    $error = true;
-                }
+                // try {
+                //     foreach ($triangles as $element) {
+                //         Yii::$app->db->createCommand("INSERT INTO triangle (a, b, c, team_id) VALUES ('".$element['a']."', '".$element['b']."', '".$element['c']."', ".$element['team_id'].")")->execute();
+                //     }
+                //     $result['check_time_3'] = microtime(true) - $result['start_time'];
+                // } catch (Exception $e) {
+                //     throw new Exception("Error : ".$e);
+                //     $error = true;
+                // }
+
+                apcu_store('triangles', $triangles);
             }
 
             $grids = Map::find()->where(['<>', 'mark', Yii::$app->params['mark_empty']])->andWhere(['<>', 'mark', Yii::$app->params['mark_core']])->andWhere(['is_sent' => 0])->all();
@@ -264,6 +310,7 @@ class MechController extends ApiController
                     $error = true;
                 }
             }
+            $result['check_time_4'] = microtime(true) - $result['start_time'];
             $result['data']['grids'] = $grids;
 
             if (!$error) {
@@ -272,7 +319,7 @@ class MechController extends ApiController
         } else if ($round && $round->is_start && $round->is_end && $round->is_timeout) {
             $result['data']['is_timeout'] = $round->is_timeout;
         }
-
+        //$conn->close();
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;
     }
@@ -304,7 +351,17 @@ class MechController extends ApiController
                     $roundTeamPlayer->save();
                 }
             }
-            $result['success'] = true;
+            $result = $this::actionStart();
+            // $result['success'] = true;
+        } else if ($round && $round->is_start && $round->is_end == 1) {
+            $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->all();
+            if ($roundTeamPlayers) {
+                foreach ($roundTeamPlayers as $roundTeamPlayer) {
+                    $roundTeamPlayer->is_win = $is_win;
+                    $roundTeamPlayer->save();
+                }
+            }
+            $result = $this::actionStart();
         }
 
         $result['query_time'] = microtime(true) - $this->ini_time;

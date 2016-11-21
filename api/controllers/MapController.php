@@ -9,6 +9,7 @@ use common\models\MechTrack;
 use common\models\Bomb;
 use common\models\RoundTeamPlayer;
 use common\models\Triangle;
+use common\models\Team;
 
 /**
  * Map controller
@@ -81,17 +82,30 @@ class MapController extends ApiController
         $result['data']['triangles'] = [];
         $result['data']['is_start'] = 0;
         $result['data']['is_end'] = 0;
+        $result['data']['rank'] = '-';
+        $result['data']['score'] = 0;
+        $result['data']['round_score'] = 0;
+        $result['data']['team_score_1'] = 0;
+        $result['data']['team_score_2'] = 0;
 
         // handshake
         $key = $this->handshake($key);
         $player = Player::findOne(['key'=>$key]);
         $result['data']['player'] = $player;
         if ($player) {
+            $result['data']['rank'] = Player::find()->where(['>', 'score', $player->score])->count()+1;
+            $result['data']['score'] = $player->score;
             $round = Round::findOne($round_id);
             $result['data']['round'] = $round;
             if ($round) {
                 $result['data']['is_start'] = $round->is_start;
                 $result['data']['is_end'] = $round->is_end;
+                $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round->id, 'player_id'=>$player->id])->one();
+                if ($roundTeamPlayer) {
+                    $result['data']['round_score'] = $roundTeamPlayer->score;
+                    $result['data']['round_score'] = apcu_fetch('player'.$player->id);
+                    $result['fetch_result'] = apcu_fetch('player'.$player->id);
+                }
             }
             if ($round && $round->is_start && $round->is_end == 0) {
                 $grids = Map::find()->where(['mark'=>Yii::$app->params['mark_default']])->all();
@@ -110,16 +124,16 @@ class MapController extends ApiController
                     }
                 }
 
-                $triangles = Triangle::find()->all();
-                foreach ($triangles as $element) {
-                    if ($element->team_id != 0) {
-                        $result['data']['triangles'][] = $element;
-                    }
-                }
+                // $result['data']['triangles'] = Triangle::find()->all();
+                $result['data']['triangles'] = apcu_fetch('triangles');
 
                 $result['success'] = true;
             }
         }
+        $team_1 = Team::findOne(2);
+        $result['data']['team_score_1'] = $team_1->score;
+        $team_2 = Team::findOne(3);
+        $result['data']['team_score_2'] = $team_2->score;
 
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;
