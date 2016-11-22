@@ -25,14 +25,15 @@ return [
     'mark_remain' => 3,
 
     // database
-    'resource' => 10,
+    'resource' => 3,
 
     // fps
     'refresh_rate' => 500,
     'timer_step' => 0.5,
 
     // timer
-    'load_scene_time' => 1500,
+    'load_scene_time' => 3000,
+    'short_load_scene_time' => 1500,
     'cool_down_time' => 5000,
     'destroy_time' => '-5 second',
     'score_dispear_time' => 500,

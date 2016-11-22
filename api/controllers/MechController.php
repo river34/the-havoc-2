@@ -40,12 +40,6 @@ class MechController extends ApiController
                 Yii::$app->db->createCommand()->truncateTable('triangle')->execute();
                 Yii::$app->db->createCommand("UPDATE map SET mark = 0, player_id = 0, team_id = 0, score = 0, score_rate = 0, is_sent = 0  WHERE mark <> ".Yii::$app->params['mark_core'])->execute();
                 Yii::$app->db->createCommand("UPDATE team SET is_ready = 0, score = 0")->execute();
-/*
-                apcu_store('player'.$grid->player_id, 0);
-                apcu_store('round_team'.$round_id.'player'.$grid->player_id, 0);
-                apcu_store('team'.$grid->team_id, 0);
-                apcu_store('map'.$grid->id, 0);
-                */
             } catch (Exception $e) {
                 throw new Exception("Error : ".$e);
                 $error = true;
@@ -92,11 +86,9 @@ class MechController extends ApiController
         }
         if ($round && $round->is_ready == 0) {
             $round->is_mech_ready = 1;
-            $round->save();
-            // $result['data']['round'] = $round;
-
             $round->is_ready = $round->is_team_ready * $round->is_mech_ready;
             $round->save();
+
             $result['success'] = true;
         }
 
@@ -123,13 +115,11 @@ class MechController extends ApiController
         }
         if ($round && $round->is_ready == 1) {
             $round->is_start = 1;
-            $round->save();
             // $result['data']['round'] = $round;
-
             $round->save();
+            apcu_clear_cache();
             $result['success'] = true;
         }
-
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;
     }
@@ -213,7 +203,8 @@ class MechController extends ApiController
         $towers = empty($this->params['towers'])?'':$this->params['towers'];    // grid of the destroyed tower
         $scores = empty($this->params['scores'])?'':$this->params['scores'];    // new score
         $triangles = empty($this->params['triangles'])?'':$this->params['triangles'];
-
+        $core_health = empty($this->params['core'])?'':$this->params['core'];
+        apcu_store('core',$core_health);
         // output
         $result['success'] = false;
         $result['data'] = [];
@@ -233,7 +224,7 @@ class MechController extends ApiController
             if (!empty($towers)) {
                 foreach ($towers as $element) {
                     try {
-                        Yii::$app->db->createCommand("UPDATE map SET mark = ". Yii::$app->params['mark_remain'] .", player_id = 0, team_id = 0 WHERE mark <> ".Yii::$app->params['mark_core']." AND id = ".$element['tower_id'])->execute();
+                        Yii::$app->db->createCommand("UPDATE map SET mark = ". Yii::$app->params['mark_remain'] ." WHERE mark <> ".Yii::$app->params['mark_core']." AND id = ".$element['tower_id'])->execute();
                         Yii::$app->db->createCommand("UPDATE round_team_player SET resource = resource + 1 WHERE round_id = ".$round_id ." AND player_id = ".$element['player_id'])->execute();
                     } catch (Exception $e) {
                         throw new Exception("Error : ".$e);
@@ -242,14 +233,16 @@ class MechController extends ApiController
                 }
                 $result['check_time_1'] = microtime(true) - $result['start_time'];
             }
-
+            for($i=1;$i<=81;$i++){
+                apcu_store('map'.$i, 0);
+            }
             if (!empty($scores)) {
                 foreach ($scores as $element) {
                     $grid = Map::findOne($element['tower_id']);
                     if ($grid) {
                         try {
 
-/*
+                            /*
                             $sql = "UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id;
                             $conn->query($sql);
                             $sql = "UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round_id ." AND player_id = ".$grid->player_id;
@@ -258,11 +251,26 @@ class MechController extends ApiController
                             $conn->query($sql);
                             $sql = "UPDATE map SET score = score + ". $element['score']. ", score_rate = ". $element['score']." WHERE id = ".$grid->id;
                             $conn->query($sql);
-*/
-                            $result['add_result']=apcu_inc('player'.$grid->player_id, (int)$element['score']);
-                            apcu_inc('round_team'.$round_id.'player'.$grid->player_id, (int)$element['score']);
-                            apcu_inc('team'.$grid->team_id, (int)$element['score']);
-                            apcu_inc('map'.$grid->id, (int)$element['score']);
+                            */
+                            if(!apcu_fetch('player'.$grid->player_id)){
+                                apcu_store('player'.$grid->player_id, (int)$element['score']);
+                            }
+                            else{
+                                $result['add_result']=apcu_inc('player'.$grid->player_id, (int)$element['score']);
+                            }
+                            if(!apcu_fetch('round_team'.$round_id.'player'.$grid->player_id)){
+                                apcu_store('round_team'.$round_id.'player'.$grid->player_id, (int)$element['score']);
+                            }
+                            else{
+                                apcu_inc('round_team'.$round_id.'player'.$grid->player_id, (int)$element['score']);
+                            }
+                            if(!apcu_fetch('team'.$grid->team_id)){
+                                apcu_store('team'.$grid->team_id, (int)$element['score']);
+                            }
+                            else{
+                                apcu_inc('team'.$grid->team_id, (int)$element['score']);
+                            }
+                            apcu_store('map'.$grid->id, (int)$element['score']);
 
 
                             // Yii::$app->db->createCommand("UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id)->execute();
@@ -287,29 +295,23 @@ class MechController extends ApiController
             //     $error = true;
             // }
 
-            if (!empty($triangles)) {
-                // try {
-                //     foreach ($triangles as $element) {
-                //         Yii::$app->db->createCommand("INSERT INTO triangle (a, b, c, team_id) VALUES ('".$element['a']."', '".$element['b']."', '".$element['c']."', ".$element['team_id'].")")->execute();
-                //     }
-                //     $result['check_time_3'] = microtime(true) - $result['start_time'];
-                // } catch (Exception $e) {
-                //     throw new Exception("Error : ".$e);
-                //     $error = true;
-                // }
+            // if (!empty($triangles)) {
+            //     // try {
+            //     //     foreach ($triangles as $element) {
+            //     //         Yii::$app->db->createCommand("INSERT INTO triangle (a, b, c, team_id) VALUES ('".$element['a']."', '".$element['b']."', '".$element['c']."', ".$element['team_id'].")")->execute();
+            //     //     }
+            //     //     $result['check_time_3'] = microtime(true) - $result['start_time'];
+            //     // } catch (Exception $e) {
+            //     //     throw new Exception("Error : ".$e);
+            //     //     $error = true;
+            //     // }
+            //
+            //     apcu_store('triangles', $triangles);
+            // }
 
-                apcu_store('triangles', $triangles);
-            }
+            apcu_store('triangles', $triangles);
 
-            $grids = Map::find()->where(['<>', 'mark', Yii::$app->params['mark_empty']])->andWhere(['<>', 'mark', Yii::$app->params['mark_core']])->andWhere(['is_sent' => 0])->all();
-            foreach ($grids as $element) {
-                try {
-                    Yii::$app->db->createCommand("UPDATE map SET is_sent = 1 WHERE id = ".$element->id)->execute();
-                } catch (Exception $e) {
-                    throw new Exception("Error : ".$e);
-                    $error = true;
-                }
-            }
+            $grids = Map::find()->where(['=', 'mark', Yii::$app->params['mark_default']])->all();
             $result['check_time_4'] = microtime(true) - $result['start_time'];
             $result['data']['grids'] = $grids;
 

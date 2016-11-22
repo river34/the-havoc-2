@@ -28,33 +28,42 @@ class RoundController extends ApiController
         $result['data']['player'] = [];
         $result['data']['roundTeamPlayer'] = [];
         $result['data']['teams'] = [];
-        $result['data']['is_open'] = 0;
+        $result['data']['empty_player_slots'] = 0;
 
         // handshake
         $key = $this->handshake($key);
+
         $player = Player::findOne(['key'=>$key]);
         $result['data']['player'] = $player;
+        $teams = Team::find()->where(['is_available'=>1])->all();
+        $result['data']['teams'] = $teams;
+        $total_num = 0;
+        foreach ($result['data']['teams'] as $team) {
+            $result['data']['empty_player_slots'] += $team->limit;
+        }
         if ($player) {
             $round = Round::find()->orderBy('id DESC')->one();
-            if ($round && $round->is_ready == 0) {
-                $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->andWhere(['player_id'=>$player->id])->one();
-                if (!$roundTeamPlayer) {
-                    $roundTeamPlayer = new RoundTeamPlayer();
-                    $roundTeamPlayer->round_id = $round->id;
-                    $roundTeamPlayer->player_id = $player->id;
-                    $roundTeamPlayer->resource = Yii::$app->params['resource'];
-                    $roundTeamPlayer->is_mech = 0;
-                    $roundTeamPlayer->save();
-                }
-                $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
-
-                // $teams = Team::find()->where(['is_ready' => 0])->all();
-                $teams = Team::find()->where(['is_available'=>1])->all();
-                $result['data']['teams'] = $teams;
-            } else {
-                $result['data']['is_open'] = 0;
+            if (!$round) {
+                MechController::actionStart();
+                $round = Round::find()->orderBy('id DESC')->one();
             }
-            $result['success'] = true;
+            if ($round) {
+                $current_count = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->count();
+                $result['data']['empty_player_slots'] -= $current_count;
+                if ($result['data']['empty_player_slots'] > 0) {
+                    $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->andWhere(['player_id'=>$player->id])->one();
+                    if (!$roundTeamPlayer) {
+                        $roundTeamPlayer = new RoundTeamPlayer();
+                        $roundTeamPlayer->round_id = $round->id;
+                        $roundTeamPlayer->player_id = $player->id;
+                        $roundTeamPlayer->resource = Yii::$app->params['resource'];
+                        $roundTeamPlayer->is_mech = 0;
+                        $roundTeamPlayer->save();
+                    }
+                    $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
+                    $result['success'] = true;
+                }
+            }
         }
 
         $result['query_time'] = microtime(true) - $this->ini_time;
@@ -151,35 +160,42 @@ class RoundController extends ApiController
         $result['data']['round_score'] = 0;
         $result['data']['team_score_1'] = 0;
         $result['data']['team_score_2'] = 0;
+        $result['data']['empty_slots'] = 0;
+        $result['data']['empty_player_slots'] = 0;
 
         // handshake
         $key = $this->handshake($key);
         $player = Player::findOne(['key'=>$key]);
         $result['data']['player'] = $player;
         $result['data']['teams'] = Team::find()->where(['is_available'=>1])->all();
+        foreach ($result['data']['teams'] as $team) {
+            $result['data']['empty_slots'] += $team->limit;
+            $result['data']['empty_player_slots'] += $team->limit;
+        }
         if ($player) {
             $result['data']['score'] = $player->score;
             $result['data']['rank'] = Player::find()->where(['>', 'score', $player->score])->count()+1;
             $round = Round::find()->orderBy('id DESC')->one();
             $result['data']['round'] = $round;
+            if (!$round) {
+                MechController::actionStart();
+                $round = Round::find()->orderBy('id DESC')->one();
+            }
             if ($round) {
-                $result['data']['is_open'] = 1;
+                $result['data']['is_team_ready'] = $round->is_team_ready;
                 $result['data']['is_mech_ready'] = $round->is_mech_ready;
                 $result['data']['is_ready'] = $round->is_ready;
                 $result['data']['is_start'] = $round->is_start;
                 $result['data']['is_end'] = $round->is_end;
+
+                $current_count = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->andWhere(['<>', 'team_id', 0])->count();
+                $result['data']['empty_slots'] -= $current_count;
+                $current_count = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->count();
+                $result['data']['empty_player_slots'] -= $current_count;
                 $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->andWhere(['player_id'=>$player->id])->one();
                 $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
                 if ($roundTeamPlayer) {
                     $result['data']['round_score'] = $roundTeamPlayer->score;
-                }
-                // if ($round->is_start && $round->is_end == 0 && $roundTeamPlayer) {
-                //     $result['success'] = true;
-                // } else if ($roundTeamPlayer) {
-                //     $team = Team::find()->where(['id'=>$roundTeamPlayer->team_id])->one();
-                //     $result['data']['team'] = $team;
-                // }
-                if ($roundTeamPlayer) {
                     $result['data']['is_player_ready'] = 1;
                     if (!empty($roundTeamPlayer->team_id)) {
                         $result['data']['is_player_in_team'] = 1;
@@ -194,19 +210,25 @@ class RoundController extends ApiController
                             $round->is_team_ready *= $team->is_ready;
                             $result['data']['team_counts'][$index] = RoundTeamPlayer::find()->where(['round_id'=>$round->id, 'team_id'=>$team->id])->count();
                         }
-                        $result['data']['is_team_ready'] = $round->is_team_ready;
                         $round->is_ready = $round->is_team_ready * $round->is_mech_ready;
                         $round->save();
                     }
                     $result['data']['is_win'] = $roundTeamPlayer->is_win;
                 }
             }
+            $result['data']['round_score'] = (int)apcu_fetch('player'.$player->id);
             $result['success'] = true;
         }
-        $team_1 = Team::findOne(2);
-        $result['data']['team_score_1'] = $team_1->score;
-        $team_2 = Team::findOne(3);
-        $result['data']['team_score_2'] = $team_2->score;
+        // $team_1 = Team::findOne(2);
+        // $result['data']['team_score_1'] = $team_1->score;
+        // $team_2 = Team::findOne(3);
+        // $result['data']['team_score_2'] = $team_2->score;
+        $result['data']['team_score_1'] = (int)apcu_fetch('team2');
+        $result['data']['team_score_2'] = (int)apcu_fetch('team3');
+
+        if ($round && !$result['data']['is_ready'] && !$result['data']['is_player_in_team'] && !$result['data']['is_player_ready'] && $result['data']['empty_player_slots'] > 0) {
+            $result['data']['is_open'] = 1;
+        }
 
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;

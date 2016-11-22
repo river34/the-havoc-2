@@ -87,6 +87,7 @@ class MapController extends ApiController
         $result['data']['round_score'] = 0;
         $result['data']['team_score_1'] = 0;
         $result['data']['team_score_2'] = 0;
+        $result['data']['resource'] = 0;
 
         // handshake
         $key = $this->handshake($key);
@@ -103,13 +104,13 @@ class MapController extends ApiController
                 $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round->id, 'player_id'=>$player->id])->one();
                 if ($roundTeamPlayer) {
                     $result['data']['round_score'] = $roundTeamPlayer->score;
-                    $result['data']['round_score'] = apcu_fetch('player'.$player->id);
-                    $result['fetch_result'] = apcu_fetch('player'.$player->id);
+                    $result['data']['resource'] = $roundTeamPlayer->resource;
                 }
             }
             if ($round && $round->is_start && $round->is_end == 0) {
                 $grids = Map::find()->where(['mark'=>Yii::$app->params['mark_default']])->all();
                 foreach ($grids as $element) {
+                    $element->score_rate = (int)apcu_fetch('map'.$element->id);
                     $result['data']['grids'][] = $element;
                 }
 
@@ -120,20 +121,26 @@ class MapController extends ApiController
                         $result['data']['remains'][] = $element;
                     } else {
                         $element->mark = Yii::$app->params['mark_empty'];
+                        $element->player_id = 0;
+                        $element->team_id = 0;
                         $element->save();
                     }
                 }
 
                 // $result['data']['triangles'] = Triangle::find()->all();
+                $result['data']['core'] = (int)apcu_fetch('core');
                 $result['data']['triangles'] = apcu_fetch('triangles');
+                $result['data']['round_score'] = (int)apcu_fetch('player'.$player->id);
 
                 $result['success'] = true;
             }
         }
-        $team_1 = Team::findOne(2);
-        $result['data']['team_score_1'] = $team_1->score;
-        $team_2 = Team::findOne(3);
-        $result['data']['team_score_2'] = $team_2->score;
+        //$team_1 = Team::findOne(2);
+        $result['data']['team_score_1'] = (int)apcu_fetch('team2');
+        //$team_2 = Team::findOne(3);
+        $result['data']['team_score_2'] = (int)apcu_fetch('team3');
+
+        $result['data']['round_score'] = (int)apcu_fetch('player'.$player->id);
 
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;
