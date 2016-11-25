@@ -8,7 +8,7 @@ class ApiController extends \yii\web\Controller
 {
     protected $params = array();
     protected $ini_time = 0;
-    public $debug = true;
+    public $debug = false;
     public $filename = '../web/track.txt';
 
     public function handshake($key) {

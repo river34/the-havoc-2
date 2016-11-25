@@ -16,6 +16,9 @@ $offset_x = Yii::$app->params['offset_x'];
 $offset_y = Yii::$app->params['offset_y'];
 $mark_empty = Yii::$app->params['mark_empty'];
 $mark_default = Yii::$app->params['mark_default'];
+
+header("Cache-Control: max-age=2592000");
+header("Connection: Keep-alive");
 ?>
 <body onload="init();">
     <?php
@@ -52,7 +55,7 @@ $mark_default = Yii::$app->params['mark_default'];
     cursor:pointer;
     overflow:hidden;
     outline:none;
-    border:1px silver dashed;
+    /* border:1px silver dashed; */
 }
 .marked {
     background-color: #fffccc;
@@ -212,7 +215,43 @@ body{font-family:<?=Yii::$app->params['font']?>;}
 .bar5 { animation-duration: 1.6s; }
 .bar6 { animation-duration: 1.1s; }
 </style>
-<script>
+<script type="text/javascript">
+    <!--//--><![CDATA[//><!--
+        var images = new Array()
+        function preload() {
+            for (i = 0; i < preload.arguments.length; i++) {
+                images[i] = new Image()
+                images[i].src = preload.arguments[i]
+            }
+        }
+        preload(
+            "<?=Yii::$app->params['core']?>",
+            "<?=Yii::$app->params['team_tower_0']?>",
+            "<?=Yii::$app->params['team_tower_1']?>",
+            "<?=Yii::$app->params['my_tower_0']?>",
+            "<?=Yii::$app->params['my_tower_1']?>",
+            "<?=Yii::$app->params['team_remain_0']?>",
+            "<?=Yii::$app->params['team_remain_1']?>",
+            "<?=Yii::$app->params['team_mech']?>",
+            "<?=Yii::$app->params['team_0']?>",
+            "<?=Yii::$app->params['team_1']?>",
+            "<?=Yii::$app->params['select_1']?>",
+            "<?=Yii::$app->params['select_1_un']?>",
+            "<?=Yii::$app->params['select_2']?>",
+            "<?=Yii::$app->params['select_2_un']?>",
+            "<?=Yii::$app->params['start_image']?>",
+            "<?=Yii::$app->params['teamup_image']?>",
+            "<?=Yii::$app->params['bg_image']?>",
+            "<?=Yii::$app->params['game_image']?>",
+            "<?=Yii::$app->params['end_image']?>",
+            "<?=Yii::$app->params['tutorial']?>"
+        )
+    //--><!]]>
+</script>
+<script type="text/javascript">
+// only send request when you get response
+var not_able_to_request = 0;
+
 // canvas
 var text;
 var background;
@@ -302,6 +341,10 @@ function init() {
     init_draw();
 
     check_status = setInterval(function(){
+        if (not_able_to_request > 0) {
+            return;
+        }
+        not_able_to_request = 1;
         checkStatus();
     }, <?=Yii::$app->params['refresh_rate']?>);
 }
@@ -315,6 +358,7 @@ function checkStatus () {
         },
         dataType : 'json',
         success: function(response) {
+            not_able_to_request = 0;
             hideLoading();
             setCookie("key", response.data.player.key, 7);
             if (response.success) {
@@ -417,6 +461,8 @@ function init_state() {
         // wait for other teammates / other team to get ready
         drawInfo('tutorial');
         drawText("<?=Yii::$app->params['title']?>", 'Wait for players' + ' ... ' + empty_slots);
+        setCookie("start_time", 0);
+        setCookie("end_time", 0);
     }
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready == 0){
         // wait for mech to get ready
@@ -429,14 +475,25 @@ function init_state() {
         drawText("<?=Yii::$app->params['title']?>", 'Wait for Mech');
     }
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready && is_start && is_end == 0) {
+        if (getCookie("start_time") == 0 && getCookie("end_time") == 0) {
+            setCookie("start_time", new Date().getTime());
+            setCookie("end_time", new Date().getTime() + 1000*60*3);
+        }
         // game starts
         clearInterval(check_status);
         clearInterval(interval);
-        start_time = new Date().getTime();
-        end_time = start_time + 1000*60*3;
         // drawInfo('enter');
         interval = setInterval(function(){
-            game_time = Math.round(100 * (end_time - new Date().getTime())/1000/60)/100;
+            var time = getCookie("end_time") - new Date().getTime();
+            if (time < 0){
+                time = 0;
+            }
+            game_time = Math.floor(time/1000/60) + ":" + Math.floor(time/1000%60);
+            //game_time = Math.round(100 * (getCookie("end_time") - getCookie("start_time"))/1000/60)/100;
+            if (not_able_to_request > 0) {
+                return;
+            }
+            not_able_to_request = 1;
             updateMap();
         }, <?=Yii::$app->params['refresh_rate']?>);
 
@@ -452,6 +509,7 @@ function init_state() {
     }
 
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready && is_start && is_end) {
+        setCookie("is_started", 0);
         // game ends
         clearInterval(check_status);
         clearInterval(interval);
@@ -777,7 +835,7 @@ function drawBackground() {
 }
 function drawCore(id) {
     var image = new Image();
-    image.src = 'images/towers/icon_coretower_new.png';
+    image.src = "<?=Yii::$app->params['core']?>";
     image.onload = function() {
         var bitmap = new createjs.Bitmap(image);
         var x = (id-1)%<?=$column?>;
@@ -786,6 +844,7 @@ function drawCore(id) {
         bitmap.y = y*<?=$grid_height?> + <?=$grid_height/2?> - image.height/2 + <?=$offset_y?>;
         bitmap.name = "core";
         main.addChild(bitmap);
+        main.setChildIndex(bitmap, main.getNumChildren()-1);
         main.update();
     };
 }
@@ -857,9 +916,11 @@ function updateMap() {
         },
         dataType : 'json',
         success: function(response) {
+            not_able_to_request = 0;
             setCookie("key", response.data.player.key, 7);
             is_start = response.data.is_start;
             is_end = response.data.is_end;
+            is_win = response.data.is_win;
             score = response.data.score;
             round_score = response.data.round_score;
             rank = response.data.rank;
@@ -873,7 +934,11 @@ function updateMap() {
                 }
             }
             if (is_end) {
-                endGame();
+                showLoading();
+                setTimeout(function(){
+                    endGame();
+                    hideLoading();
+                }, 1000);
             }
         }
     });
@@ -984,7 +1049,7 @@ function drawGame(grids, remains, triangles) {
     $('#info').hide();
     $('#grids').show();
 }
-function drawText(title = null, hint = null, score = null, round_score = null, rank = null, team_score_1 = null, team_score_2 = null, core = null) {
+function drawText(title, hint, score, round_score, rank, team_score_1, team_score_2, core) {
     if (title != null) {
         if (main.getChildByName("title") == null) {
             var string = new createjs.Text(title, '84px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
@@ -1239,7 +1304,11 @@ function clearTower(id) {
         main.update();
     }
 }
-function drawTower(id, team_id, tower_player_id, score_rate = 0) {
+function drawTower(id, team_id, tower_player_id, score_rate) {
+    if (score_rate == null){
+        score_rate = 0;
+    }
+
     if (team_id < 2) {
         return;
     }
@@ -1323,7 +1392,6 @@ function endGame() {
             end.update();
         }
     }
-    is_win = 1;
     var image;
     if (end.getChildByName("winner") == null) {
         if (is_win == 0) {
@@ -1346,14 +1414,16 @@ function endGame() {
                 }
             }
         }
-        image.onload = function() {
-            var bitmap = new createjs.Bitmap(image);
-            bitmap.name = "winner";
-            bitmap.x = 260;
-            bitmap.y = 176;
-            end.addChild(bitmap);
-            end.setChildIndex(bitmap, end.getNumChildren()-1);
-            end.update();
+        if (image != null) {
+            image.onload = function() {
+                var bitmap = new createjs.Bitmap(image);
+                bitmap.name = "winner";
+                bitmap.x = 260;
+                bitmap.y = 176;
+                end.addChild(bitmap);
+                end.setChildIndex(bitmap, end.getNumChildren()-1);
+                end.update();
+            }
         }
     }
 

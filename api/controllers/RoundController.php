@@ -196,6 +196,7 @@ class RoundController extends ApiController
                 $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
                 if ($roundTeamPlayer) {
                     $result['data']['round_score'] = $roundTeamPlayer->score;
+                    $result['data']['is_win'] = $roundTeamPlayer->is_win;
                     $result['data']['is_player_ready'] = 1;
                     if (!empty($roundTeamPlayer->team_id)) {
                         $result['data']['is_player_in_team'] = 1;
@@ -213,6 +214,10 @@ class RoundController extends ApiController
                         $round->is_ready = $round->is_team_ready * $round->is_mech_ready;
                         $round->save();
                     }
+                }
+
+                $roundTeamPlayer = RoundTeamPlayer::find()->where(['player_id'=>$player->id])->orderBy('id DESC')->one();
+                if ($roundTeamPlayer) {
                     $result['data']['is_win'] = $roundTeamPlayer->is_win;
                 }
             }

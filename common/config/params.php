@@ -25,7 +25,7 @@ return [
     'mark_remain' => 3,
 
     // database
-    'resource' => 3,
+    'resource' => 1,
 
     // fps
     'refresh_rate' => 500,

@@ -82,6 +82,7 @@ class MapController extends ApiController
         $result['data']['triangles'] = [];
         $result['data']['is_start'] = 0;
         $result['data']['is_end'] = 0;
+        $result['data']['is_win'] = 0;
         $result['data']['rank'] = '-';
         $result['data']['score'] = 0;
         $result['data']['round_score'] = 0;
@@ -105,6 +106,7 @@ class MapController extends ApiController
                 if ($roundTeamPlayer) {
                     $result['data']['round_score'] = $roundTeamPlayer->score;
                     $result['data']['resource'] = $roundTeamPlayer->resource;
+                    $result['data']['is_win'] = $roundTeamPlayer->is_win;
                 }
             }
             if ($round && $round->is_start && $round->is_end == 0) {

@@ -26,6 +26,7 @@ return [
     'team_background_color_1' => '#ff7a7a', // fire
 
     // images
+    'core' => 'images/towers/icon_coretower_new.png',
     'team_tower_0' => 'images/towers/icon_bluetower.png', // ice
     'team_tower_1' => 'images/towers/icon_redtower_new.png',  // fire
     'my_tower_0' => 'images/towers/icon_bluetower_glow.png', // ice
