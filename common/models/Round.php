@@ -14,6 +14,7 @@ use Yii;
  * @property integer $is_start
  * @property integer $is_end
  * @property integer $is_timeout
+ * @property string $secret
  * @property string $updated_at
  * @property string $created_at
  */
@@ -35,6 +36,7 @@ class Round extends \yii\db\ActiveRecord
         return [
             [['is_team_ready', 'is_mech_ready', 'is_ready', 'is_start', 'is_end', 'is_timeout'], 'integer'],
             [['updated_at', 'created_at'], 'safe'],
+            [['secret'], 'string', 'max' => 45],
         ];
     }
 
@@ -51,6 +53,7 @@ class Round extends \yii\db\ActiveRecord
             'is_start' => 'Is Start',
             'is_end' => 'Is End',
             'is_timeout' => 'Is Timeout',
+            'secret' => 'Secret',
             'updated_at' => 'Updated At',
             'created_at' => 'Created At',
         ];

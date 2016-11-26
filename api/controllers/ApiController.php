@@ -13,22 +13,25 @@ class ApiController extends \yii\web\Controller
 
     public function handshake($key) {
         $player = Player::findOne(['key'=>$key]);
-        if (!$player) {
-            $player = new Player();
-            $player->name = microtime().rand();
-            $key = md5(microtime().rand());
-            $player->key = $key;
-            $player->device = $_SERVER['HTTP_USER_AGENT'];
-            if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-                $player->ip = $_SERVER['HTTP_CLIENT_IP'];
-            } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                $player->ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-            } else {
-                $player->ip = $_SERVER['REMOTE_ADDR'];
-            }
-            $player->save();
+        if ($player) {
+            return $key;
         }
-        return $key;
+        if (!$player) {
+            // $player = new Player();
+            // $player->name = microtime().rand();
+            // $key = md5(microtime().rand());
+            // $player->key = $key;
+            // $player->device = $_SERVER['HTTP_USER_AGENT'];
+            // if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            //     $player->ip = $_SERVER['HTTP_CLIENT_IP'];
+            // } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            //     $player->ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            // } else {
+            //     $player->ip = $_SERVER['REMOTE_ADDR'];
+            // }
+            // $player->save();
+            return '';
+        }
     }
 
     public function beforeAction($action) {

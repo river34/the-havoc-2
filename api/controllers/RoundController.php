@@ -13,6 +13,94 @@ use common\models\RoundTeamPlayer;
  */
 class RoundController extends ApiController
 {
+
+    // (mobile side)
+    public function actionSignUp() {
+        // input
+        $name = empty($this->params['name'])?'':strtolower(trim($this->params['name']));
+        $email = empty($this->params['email'])?'':strtolower(trim($this->params['email']));
+        $password = empty($this->params['password'])?'':strtolower(trim($this->params['password']));
+
+        // output
+        $result['success'] = false;
+        $result['data'] = [];
+        $result['data']['player'] = [];
+
+        if (!empty($name) && !empty($password)) {
+            $player = Player::findOne(['name'=>$name]);
+            if ($player) {
+                $result['data']['error'] = 'name_invalid';
+            } else {
+                $player = new Player();
+                $player->name = $name;
+                $player->email = $email;
+                $player->password = $password;
+                $key = md5(microtime().rand());
+                $player->key = $key;
+                $player->device = $_SERVER['HTTP_USER_AGENT'];
+                if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+                    $player->ip = $_SERVER['HTTP_CLIENT_IP'];
+                } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                    $player->ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                } else {
+                    $player->ip = $_SERVER['REMOTE_ADDR'];
+                }
+                $player->save();
+                $player->refresh();
+                $result['data']['player'] = $player;
+                $result['success'] = true;
+            }
+        }
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
+    // (mobile side)
+    public function actionLogin() {
+        // input
+        $name = empty($this->params['name'])?'':strtolower(trim($this->params['name']));
+        $password = empty($this->params['password'])?'':strtolower(trim($this->params['password']));
+
+        // output
+        $result['success'] = false;
+        $result['data'] = [];
+        $result['data']['player'] = [];
+
+        if (!empty($name) && !empty($password)) {
+            $player = Player::findOne(['name'=>$name]);
+            if ($player) {
+                if ($player->password == $password) {
+                    if (empty($player->key)) {
+                        $key = md5(microtime().rand());
+                        $player->key = $key;
+                    }
+                    $player->device = $_SERVER['HTTP_USER_AGENT'];
+                    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+                        $player->ip = $_SERVER['HTTP_CLIENT_IP'];
+                    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                        $player->ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                    } else {
+                        $player->ip = $_SERVER['REMOTE_ADDR'];
+                    }
+                    $player->save();
+                    $player->refresh();
+                    $result['data']['player'] = $player;
+                    $result['success'] = true;
+                } else {
+                    $result['data']['error'] = 'wrong_password';
+                }
+            } else {
+                $result['data']['error'] = 'new_player';
+            }
+        } else {
+            $resul['data']['error'] = 'empty';
+        }
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
     // (mobile side)
     // start a new round
     // output: player
@@ -21,6 +109,8 @@ class RoundController extends ApiController
     public function actionStart() {
         // input
         $key = empty($this->params['key'])?'':$this->params['key'];
+        $secret = empty($this->params['secret'])?'':strtolower(trim($this->params['secret']));
+        $check_secret = Yii::$app->params['check_secret'];
 
         // output
         $result['success'] = false;
@@ -47,7 +137,7 @@ class RoundController extends ApiController
                 MechController::actionStart();
                 $round = Round::find()->orderBy('id DESC')->one();
             }
-            if ($round) {
+            if ($round && (!$check_secret || ($check_secret && $round->secret == $secret))) {
                 $current_count = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->count();
                 $result['data']['empty_player_slots'] -= $current_count;
                 if ($result['data']['empty_player_slots'] > 0) {
@@ -63,6 +153,8 @@ class RoundController extends ApiController
                     $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
                     $result['success'] = true;
                 }
+            } else if ($round) {
+                $result['data']['error'] = 'wrong_secret';
             }
         }
 
@@ -91,6 +183,7 @@ class RoundController extends ApiController
 
         // handshake
         $key = $this->handshake($key);
+
         $player = Player::findOne(['key'=>$key]);
         $round = Round::findOne($round_id);
         $team = Team::findOne($team_id);
@@ -165,6 +258,12 @@ class RoundController extends ApiController
 
         // handshake
         $key = $this->handshake($key);
+        if (empty($key)) {
+            $result['data']['error'] = 'not_login';
+            $result['query_time'] = microtime(true) - $this->ini_time;
+            return $result;
+        }
+
         $player = Player::findOne(['key'=>$key]);
         $result['data']['player'] = $player;
         $result['data']['teams'] = Team::find()->where(['is_available'=>1])->all();
@@ -221,6 +320,11 @@ class RoundController extends ApiController
                     $result['data']['is_win'] = $roundTeamPlayer->is_win;
                 }
             }
+
+            if ($round && !$result['data']['is_ready'] && !$result['data']['is_player_in_team'] && !$result['data']['is_player_ready'] && $result['data']['empty_player_slots'] > 0) {
+                $result['data']['is_open'] = 1;
+            }
+
             $result['data']['round_score'] = (int)apcu_fetch('player'.$player->id);
             $result['success'] = true;
         }
@@ -230,10 +334,6 @@ class RoundController extends ApiController
         // $result['data']['team_score_2'] = $team_2->score;
         $result['data']['team_score_1'] = (int)apcu_fetch('team2');
         $result['data']['team_score_2'] = (int)apcu_fetch('team3');
-
-        if ($round && !$result['data']['is_ready'] && !$result['data']['is_player_in_team'] && !$result['data']['is_player_ready'] && $result['data']['empty_player_slots'] > 0) {
-            $result['data']['is_open'] = 1;
-        }
 
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;
@@ -254,6 +354,7 @@ class RoundController extends ApiController
 
         // handshake
         $key = $this->handshake($key);
+
         $player = Player::findOne(['key'=>$key]);
         $result['data']['player'] = $player;
         if ($player) {
@@ -282,6 +383,7 @@ class RoundController extends ApiController
 
         // handshake
         $key = $this->handshake($key);
+
         $player = Player::findOne(['key'=>$key]);
         $result['data']['player'] = $player;
         if ($player) {
@@ -291,6 +393,68 @@ class RoundController extends ApiController
                 $result['success'] = true;
             }
         }
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
+    // (mobile side)
+    public function actionGetRanks() {
+        // input
+        $key = empty($this->params['key'])?'':$this->params['key'];
+        $limit = empty($this->params['limit'])?10:$this->params['limit'];
+
+        // output
+        $result['success'] = false;
+        $result['data'] = [];
+        $result['data']['player'] = [];
+        $result['data']['rank'] = '';
+        $result['data']['ranks'] = [];
+
+        // handshake
+        $key = $this->handshake($key);
+
+        $player = Player::findOne(['key'=>$key]);
+        $result['data']['player'] = $player;
+        if ($player) {
+            $result['data']['rank'] = Player::find()->where(['>', 'score', $player->score])->count()+1;
+            $players = Player::find()->orderBy('score DESC, id')->limit($limit)->all();
+            foreach ($players as $index=>$element) {
+                $result['data']['ranks'][] = array('rank'=>$index+1, 'name'=>$element->name, 'score'=>$element->score);
+            }
+            $result['success'] = true;
+        }
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
+    // (mobile side)
+    public function actionGetSecret() {
+        // input
+        $key = empty($this->params['key'])?'':$this->params['key'];
+
+        // output
+        $result['success'] = false;
+        $result['data'] = [];
+        $result['data']['player'] = [];
+        $result['data']['secret'] = '';
+        $result['data']['check_secret'] = 0;
+
+        $player = Player::findOne(['key'=>$key]);
+        $result['data']['player'] = $player;
+        if ($player) {
+            $round = Round::find()->orderBy('id DESC')->one();
+            if (!$round) {
+                MechController::actionStart();
+                $round = Round::find()->orderBy('id DESC')->one();
+            }
+            if ($round) {
+                $result['data']['secret'] = $round->secret;
+                $result['success'] = true;
+            }
+        }
+        $result['data']['check_secret'] = Yii::$app->params['check_secret'];
 
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;

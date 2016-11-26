@@ -21,10 +21,11 @@ header("Cache-Control: max-age=2592000");
 header("Connection: Keep-alive");
 ?>
 <body onload="init();">
-    <?php
-    // echo "Hello World!";
-    ?>
+    <!-- start of mobile game UI -->
     <canvas id="text" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
+    <canvas id="login" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
+    <canvas id="keycode" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
+    <canvas id="leaderboard" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
     <canvas id="start" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
     <canvas id="end" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
     <canvas id="teamup" width="<?=$scene_width?>" height="<?=$scene_height?>" style="position:absolute;top:0;left:0;" hidden></canvas>
@@ -45,6 +46,37 @@ header("Connection: Keep-alive");
     }
     ?>
     </div>
+    <!-- end of mobile game UI -->
+
+    <!-- start of login form -->
+    <div id="login-form" class="input-form" hidden>
+        <div id="login-name" class="input-field">
+            <label class="title">Name</label>
+            <input class="input" type="text" id="name" name="name" >
+        </div>
+        <div id="login-password" class="input-field">
+            <label class="title">Password</label>
+            <input class="input" type="password" id="password" name="password" >
+        </div>
+        <div id="login-submit" class="input-field">
+            <input class="submit" type="submit" value="Login / Signup" onclick="loginSubmit();">
+        </div>
+        <!-- <input type="hidden" name="_csrf" value="<?=Yii::$app->request->getCsrfToken()?>" /> -->
+    </div>
+    <!-- end of login form -->
+
+    <!-- start of secret form -->
+    <div id="keycode-form" class="input-form" hidden>
+        <div id="keycode-secret" class="input-field">
+            <label class="title">Secret Code</label>
+            <input class="input" type="text" id="secret" name="secret" >
+        </div>
+        <div id="keycode-submit" class="input-field">
+            <input class="submit" type="submit" value="Submit" onclick="keycodeSubmit();">
+        </div>
+    </div>
+    <!-- end of secret form -->
+
 </body>
 
 <style>
@@ -128,6 +160,78 @@ header("Connection: Keep-alive");
 #end {
     position: fixed;
     z-index: 2000;
+}
+#login {
+    position: fixed;
+    z-index: 2000;
+}
+#leaderboard {
+    position: fixed;
+    z-index: 2000;
+}
+#keycode {
+    position: fixed;
+    z-index: 2000;
+}
+.input-form {
+    position: absolute;
+    width: <?=$scene_width?>px;
+    height: <?=$scene_height?>px;
+    z-index: 2100;
+    font-size: 36px;
+}
+.input-form .input-field {
+    position: absolute;
+    width: 600px;
+    left: 300px;
+}
+.input-form .input-field .title {
+    position: absolute;
+    width: 150px;
+    left: 0;
+    color: <?=Yii::$app->params['main_text_color']?>;
+}
+.input-form .input-field .input {
+    position: absolute;
+    width: 400px;
+    left: 200px;
+    padding: 0 10px;
+    border: none;
+}
+.input-form .input-field .submit {
+    position: absolute;
+    width: 600px;
+    left: 0;
+    background: black;
+    border: none;
+    color: <?=Yii::$app->params['main_text_color']?>;
+}
+#login-form #login-name {
+    position: absolute;
+    top: 400px;
+}
+#login-form #login-password {
+    position: absolute;
+    top: 500px;
+}
+#login-form #login-submit {
+    position: absolute;
+    top: 600px;
+}
+#keycode-form #keycode-secret {
+    position: absolute;
+    top: 400px;
+}
+#keycode-form #keycode-submit {
+    position: absolute;
+    top: 600px;
+}
+#keycode-form .input-field .title {
+    width: 200px;
+}
+#keycode-form .input-field .input {
+    width: 350px;
+    left: 250px;
 }
 body{font-family:<?=Yii::$app->params['font']?>;}
 .loader {
@@ -244,7 +348,8 @@ body{font-family:<?=Yii::$app->params['font']?>;}
             "<?=Yii::$app->params['bg_image']?>",
             "<?=Yii::$app->params['game_image']?>",
             "<?=Yii::$app->params['end_image']?>",
-            "<?=Yii::$app->params['tutorial']?>"
+            "<?=Yii::$app->params['tutorial']?>",
+            "<?=Yii::$app->params['close_btn']?>"
         )
     //--><!]]>
 </script>
@@ -260,8 +365,11 @@ var teamup;
 var info;
 var start;
 var end;
+var login;
+var keycode;
 
 // params
+var is_login;
 var is_open;
 var is_player_ready;
 var is_player_in_team;
@@ -276,6 +384,7 @@ var resource;
 var score;
 var round_score;
 var rank;
+var ranks;
 var team_id;
 var round_id;
 var teams;
@@ -285,6 +394,10 @@ var game_time;
 var start_time;
 var end_time;
 var empty_slots;
+var name;
+var error;
+var secret;
+var check_secret;
 
 // preloaded images
 var team_tower_images = [];
@@ -362,6 +475,7 @@ function checkStatus () {
             hideLoading();
             setCookie("key", response.data.player.key, 7);
             if (response.success) {
+                is_login = 1;
                 is_open = response.data.is_open;
                 is_player_ready = response.data.is_player_ready;
                 is_player_in_team = response.data.is_player_in_team;
@@ -388,9 +502,11 @@ function checkStatus () {
                 empty_player_slots = response.data.empty_player_slots;
                 if (is_player_ready == 0 && is_start) { // player is not in current game
                     player_id = response.data.player.id;
+                    name = response.data.player.name;
                 }
                 if (is_player_ready && is_start) {
                     player_id = response.data.player.id;
+                    name = response.data.player.name;
                     resource = response.data.roundTeamPlayer.resource;
                     score = response.data.player.score;
                     round_score = response.data.roundTeamPlayer.score;
@@ -399,10 +515,12 @@ function checkStatus () {
                 }
                 if (is_player_ready && is_player_in_team == 0) {
                     player_id = response.data.player.id;
+                    name = response.data.player.name;
                     teams = response.data.teams;
                     round_id = response.data.round.id;
                 }
             } else {
+                is_login = 1;
                 is_open = 0;
                 is_player_ready = 0;
                 is_player_in_team = 0;
@@ -412,6 +530,12 @@ function checkStatus () {
                 is_start = 0;
                 is_end = 0;
                 is_win = 0;
+                name = "";
+
+                if (response.data.error == 'not_login') {
+                    is_login = 0;
+                    loginGame();
+                }
             }
             init_state();
         }
@@ -426,21 +550,37 @@ function init_draw() {
     background = new createjs.Stage("background");
     start = new createjs.Stage("start");
     end = new createjs.Stage("end");
+    login = new createjs.Stage("login");
+    leaderboard = new createjs.Stage("leaderboard");
+    keycode = new createjs.Stage("keycode");
 
     drawBackground();
     // drawText("<?=Yii::$app->params['title']?>");
 }
 function init_state() {
-    $('#end').hide();
-    $('#start').hide();
+    hideScenes();
 
     // if (getCookie("start") == 1){
     //     startGame();
     //     return;
     // }
     //
-    if (getCookie("end") == 1){
+
+    if (is_login == 0) {
+        // login
+        loginGame();
+        return;
+    }
+    if (getCookie("end") == 1) {
         endGame();
+        return;
+    }
+    if (getCookie("leaderboard") == 1) {
+        getLeaderBoard();
+        return;
+    }
+    if (getCookie("start") == 1){
+        startGame();
         return;
     }
     if (is_open && is_player_ready == 0) {
@@ -449,7 +589,6 @@ function init_state() {
         return;
     }
     if (is_open == 0 && is_player_ready == 0) {
-        //waitGame();
         startGame();
         return;
     }
@@ -785,8 +924,6 @@ function drawInfo(index) {
     $('#info').show();
 }
 function drawBackground() {
-    $('#end').hide();
-    $('#start').hide();
     // preload background
     // if (background.getChildByName("bg") == null) {
     //     var rect = new createjs.Shape();
@@ -918,6 +1055,7 @@ function updateMap() {
         success: function(response) {
             not_able_to_request = 0;
             setCookie("key", response.data.player.key, 7);
+            name = response.data.player.name;
             is_start = response.data.is_start;
             is_end = response.data.is_end;
             is_win = response.data.is_win;
@@ -950,6 +1088,7 @@ function joinGame() {
         url: "<?= '../../api/web/index.php?r=round/start'; ?>",
         data: {
             key: getCookie('key'),
+            secret: $('#secret').val(),
         },
         dataType : 'json',
         success: function(response) {
@@ -957,38 +1096,247 @@ function joinGame() {
             setCookie("key", response.data.player.key, 7);
             if (response.success) {
                 location.reload();
+            } else {
+                if (response.data.error == 'wrong_secret') {
+                    error = "wrong secret";
+                }
+                keycodeGame();
             }
         }
     });
 }
-function waitGame() {
-    $('#end').hide();
 
-    if (start.getChildByName("wait_bg") == null) {
-        bg_image = new Image();
-        bg_image.src = "<?=Yii::$app->params['bg_image']?>";
-        bg_image.onload = function() {
-            var bitmap = new createjs.Bitmap(bg_image);
-            bitmap.name = "wait_bg";
-            start.addChild(bitmap);
-            start.setChildIndex(bitmap, 0);
-            start.update();
+function keycodeGame() {
+    hideScenes();
+
+    clearInterval(check_status);
+    clearInterval(interval);
+
+    if (error) {
+        if (keycode.getChildByName('keycode_hint') == null) {
+            var text = new createjs.Text(error, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+            text.textAlign = 'center';
+            text.name = 'keycode_hint';
+            text.x = <?=$scene_width/2?>;
+            text.y = 680;
+            keycode.addChild(text);
+            keycode.setChildIndex(text, keycode.getNumChildren()-1);
+            keycode.update();
         }
     }
 
-    start.update();
-    $('#start').show();
+    $('#keycode').show();
+    $('#keycode-form').show();
+}
+
+function loginGame() {
+    hideScenes();
+
+    clearInterval(check_status);
+    clearInterval(interval);
+
+    // if (login.getChildByName("bg") == null) {
+    //     var image = new Image();
+    //     image.src = "<?=Yii::$app->params['bg_image']?>";
+    //     image.onload = function() {
+    //         var bitmap = new createjs.Bitmap(image);
+    //         bitmap.name = "bg";
+    //         login.addChild(bitmap);
+    //         login.setChildIndex(bitmap, 0);
+    //         login.update();
+    //     }
+    // }
+
+    if (is_login == 0 && error) {
+        if (login.getChildByName('login_hint') == null) {
+            var text = new createjs.Text(error, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+            text.textAlign = 'center';
+            text.name = 'login_hint';
+            text.x = <?=$scene_width/2?>;
+            text.y = 680;
+            login.addChild(text);
+            login.setChildIndex(text, login.getNumChildren()-1);
+            login.update();
+        }
+    }
+
+    $('#login').show();
+    $('#login-form').show();
+}
+
+function leaderBoard() {
+    hideScenes();
+
+    clearInterval(check_status);
+    clearInterval(interval);
+
+    setCookie("leaderboard", 1);
+
+    /////////////////////////////////////////////
+    ////   need to check the leaderBoard
+    /////////////////////////////////////////////
+
+    if (leaderboard.getChildByName("bg") == null) {
+        var rect = new createjs.Shape();
+        rect.graphics.beginFill("<?=Yii::$app->params['background_color']?>").drawRect(0, 0, 600, 800);
+        rect.x = <?=$scene_width/2?> - 600/2;
+        rect.y = 100;
+        rect.alpha = 0.5;
+        rect.name = "bg";
+        leaderboard.addChild(rect);
+        leaderboard.setChildIndex(rect, 0);
+        leaderboard.update();
+    }
+
+    if (leaderboard.getChildByName("title") == null) {
+        var text = new createjs.Text('Leaderboard', '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+        text.textAlign = 'center';
+        text.name = 'title';
+        text.x = <?=$scene_width/2?>;
+        text.y = 200;
+        leaderboard.addChild(text);
+        leaderboard.setChildIndex(text, leaderboard.getNumChildren()-1);
+        leaderboard.update();
+    }
+
+    if (ranks) {
+        if (leaderboard.getChildByName("list") == null) {
+            var list = new createjs.Container();
+            list.name = "list";
+            list.x = 300;
+            list.y = 300;
+
+            for (var i=0; i<ranks.length; i++) {
+                var text1 = new createjs.Text(ranks[i]['rank'], '24px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+                text1.textAlign = 'left';
+                text1.x = 50;
+                text1.y = i*50;
+
+                var text2 = new createjs.Text(ranks[i]['name'], '24px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+                text2.textAlign = 'left';
+                text2.x = 100;
+                text2.y = i*50;
+
+                var text3 = new createjs.Text(ranks[i]['score'], '24px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+                text3.textAlign = 'right';
+                text3.x = 550;
+                text3.y = i*50;
+
+                var border = new createjs.Shape();
+                border.graphics.beginFill("<?=Yii::$app->params['main_color']?>").drawRect(0, 0, 500, 1);
+                border.x = 50;
+                border.y = i*50 + 40;
+                border.alpha = 0.5;
+
+                list.addChild(text1, text2, text3, border);
+            }
+
+            leaderboard.addChild(list);
+            leaderboard.setChildIndex(list, leaderboard.getNumChildren()-1);
+            leaderboard.update();
+        }
+    }
+
+    // close button
+    if (leaderboard.getChildByName("close") == null) {
+        var rect = new createjs.Shape();
+        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 100, 100);
+        rect.x = 900-100;
+        rect.y = 100;
+        rect.alpha = 0.5;
+        rect.name = "close";
+        rect.on("click", function(event) {
+            // close leader board = back to start game
+            setCookie("leaderboard", 0);
+            // startGame();
+            location.reload();
+        });
+        leaderboard.addChild(rect);
+        leaderboard.setChildIndex(rect, leaderboard.getNumChildren()-1);
+        leaderboard.update();
+
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['close_btn']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
+            bitmap.name = "close_btn";
+            bitmap.x = 900-50;
+            bitmap.y = 100;
+            bitmap.scaleX = 50/image.width;
+            bitmap.scaleY = 50/image.height;
+            leaderboard.addChild(bitmap);
+            leaderboard.setChildIndex(bitmap, leaderboard.getNumChildren()-2);
+            leaderboard.update();
+        }
+    }
+
+    leaderboard.update();
+    $("#leaderboard").show();
+}
+
+function getLeaderBoard() {
+    showLoading();
+    $.ajax({
+        // method: "POST",
+        url: "<?= '../../api/web/index.php?r=round/get-ranks'; ?>",
+        data: {
+            key: getCookie('key'),
+            limit: 10,
+        },
+        dataType : 'json',
+        success: function(response) {
+            hideLoading();
+            setCookie("key", response.data.player.key, 7);
+            if (response.success) {
+                rank = response.data.rank;
+                ranks = response.data.ranks;
+                leaderBoard();
+            }
+        }
+    });
+}
+
+function checkSecret() {
+    showLoading();
+    $.ajax({
+        // method: "POST",
+        url: "<?= '../../api/web/index.php?r=round/get-secret'; ?>",
+        data: {
+            key: getCookie('key'),
+        },
+        dataType : 'json',
+        success: function(response) {
+            hideLoading();
+            setCookie("key", response.data.player.key, 7);
+            if (response.success) {
+                // secret = response.data.secret;
+                check_secret = response.data.check_secret;
+            } else {
+                // secret = '';
+                check_secret = 0;
+            }
+            if (check_secret == 0) {
+                joinGame();
+            } else {
+                keycodeGame();
+            }
+        }
+    });
 }
 
 function startGame() {
-    $('#end').hide();
+    hideScenes();
+
+    clearInterval(check_status);
+    clearInterval(interval);
+
     setCookie("start", 1);
 
     if (start.getChildByName("bg") == null) {
-        start_image = new Image();
-        start_image.src = "<?=Yii::$app->params['start_image']?>";
-        start_image.onload = function() {
-            var bitmap = new createjs.Bitmap(start_image);
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['start_image']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
             bitmap.name = "bg";
             start.addChild(bitmap);
             start.setChildIndex(bitmap, 0);
@@ -1000,19 +1348,49 @@ function startGame() {
         var rect = new createjs.Shape();
         rect.graphics.beginFill("#000000").drawRect(0, 0, 400, 200);
         rect.name = "start";
-        rect.alpha = 0.1;
+        rect.alpha = 0.5;
         rect.x = <?=$scene_width/2?> - 200;
         rect.y = <?=$scene_height/2?>;
-        if (is_open == 1) {
+        if (is_open) {
             rect.on("click", function(event) {
                 setCookie("start", 0);
-                joinGame();
+                //joinGame();
+                checkSecret();
             });
-        } else {
+        } else if (is_open == 0) {
             rect.alpha = 0.1;
         }
         start.addChild(rect);
+        start.setChildIndex(rect, start.getNumChildren()-1);
         start.update();
+    }
+
+    if (start.getChildByName("leaderboard") == null) {
+        var rect = new createjs.Shape();
+        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 400, 200);
+        rect.name = "leaderboard";
+        rect.alpha = 0.5;
+        rect.x = <?=$scene_width/2?> - 200;
+        rect.y = <?=$scene_height/2?> + 200;
+        rect.on("click", function(event) {
+            setCookie("start", 0);
+            getLeaderBoard();
+        });
+        start.addChild(rect);
+        start.setChildIndex(rect, start.getNumChildren()-1);
+        start.update();
+    }
+
+    if (is_login) {
+        if (start.getChildByName('login_hint') == null) {
+            var text = new createjs.Text('welcome, ' + name, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+            text.textAlign = 'center';
+            text.name = 'login_hint';
+            text.x = <?=$scene_width/2?>;
+            text.y = 700;
+            start.addChild(text);
+            start.update();
+        }
     }
 
     if (is_open == 0) {
@@ -1025,7 +1403,7 @@ function startGame() {
             start.addChild(text);
             start.update();
         }
-    } else {
+    } else if (is_open) {
         if (start.getChildByName('start_hint')) {
             start.removeChild(start.getChildByName('start_hint'));
         }
@@ -1371,7 +1749,21 @@ function drawGameBg() {
     }
     drawCore(41);
 }
+function hideScenes() {
+    $('#login').hide();
+    $('#start').hide();
+    $('#teamup').hide();
+    $('#leaderboard').hide();
+    $('#info').hide();
+    $('#main').hide();
+    $('#end').hide();
+    $('#keycode').hide();
+    $('#keycode-form').hide();
+    $('#login-form').hide();
+}
 function endGame() {
+    hideScenes();
+
     clearInterval(check_status);
     clearInterval(interval);
 
@@ -1550,7 +1942,6 @@ function endGame() {
 
     end.update();
     $('#end').show();
-    $('#background').show();
 }
 // Warn if overriding existing method
 if(Array.prototype.equals)
@@ -1602,4 +1993,84 @@ function getCookie(cname) {
     return "";
 }
 
+// login
+function loginSubmit () {
+    $('#login-form').hide();
+    showLoading();
+    /* stop form from submitting normally */
+    event.preventDefault();
+
+    $.ajax({
+        // method: "POST",
+        url: "<?= '../../api/web/index.php?r=round/login'; ?>",
+        data: {
+            name: $('#name').val(),
+            password: $('#password').val(),
+        },
+        dataType : 'json',
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                setCookie("key", response.data.player.key, 7);
+                $('#login-form').hide();
+                is_login = 1;
+                name = response.data.player.name;
+                location.reload();
+            } else {
+                is_login = 0;
+                if (response.data.error == 'new_player') {
+                    signupSubmit();
+                } else if (response.data.error == 'emtpy') {
+                    error = "name and password cannot be empty";
+                    loginGame();
+                } else if (response.data.error == 'wrong_password') {
+                    error = "wrong password";
+                    loginGame();
+                }
+            }
+        }
+    });
+}
+
+// signup
+function signupSubmit () {
+    $('#login-form').hide();
+    showLoading();
+    /* stop form from submitting normally */
+    event.preventDefault();
+
+    $.ajax({
+        // method: "POST",
+        url: "<?= '../../api/web/index.php?r=round/sign-up'; ?>",
+        data: {
+            name: $('#name').val(),
+            password: $('#password').val(),
+        },
+        dataType : 'json',
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                setCookie("key", response.data.player.key, 7);
+                $('#login-form').hide();
+                is_login = 1;
+                name = response.data.player.name;
+                location.reload();
+            } else {
+                is_login = 0;
+                if (response.data.error == "name_invalid") {
+                    error = "name is taken";
+                }
+                loginGame();
+            }
+        }
+    });
+}
+
+// secret
+function keycodeSubmit () {
+    $('#keycode-form').hide();
+    event.preventDefault();
+
+    joinGame();
+}
 </script>

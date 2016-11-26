@@ -51,6 +51,7 @@ class MechController extends ApiController
                 //  Mech is ready at the beginning
                 /////////////////////////////////////
                 $round->is_mech_ready = 1;
+                $round->secret = substr(md5(microtime().rand()), 0, 4);
                 $round->save();
                 // $result['data']['round'] = $round;
                 $result['data']['round_id'] = $round->id;
@@ -344,26 +345,69 @@ class MechController extends ApiController
             $round = Round::find()->orderBy('id DESC')->one();
         }
         if ($round && $round->is_start && $round->is_end == 0) {
+            // end this round
             $round->is_end = 1;
             $round->save();
+
+            // save round score to each player
+            // add round score to each player
             $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->all();
             if ($roundTeamPlayers) {
                 foreach ($roundTeamPlayers as $roundTeamPlayer) {
                     $roundTeamPlayer->is_win = $is_win;
+                    $roundTeamPlayer->score = (int)apcu_fetch('player'.$roundTeamPlayer->player_id);
                     $roundTeamPlayer->save();
+                    $player = Player::findOne($roundTeamPlayer->player_id);
+                    if ($player) {
+                        $player->score += (int)apcu_fetch('player'.$roundTeamPlayer->player_id);
+                        $player->save();
+                    }
                 }
             }
+
+            // start the next round directly
             $result = $this::actionStart();
-            // $result['success'] = true;
-        } else if ($round && $round->is_start && $round->is_end == 1) {
+            $result['success'] = true;
+        }
+        /*
+         else if ($round && $round->is_start && $round->is_end == 1) { // force
             $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->all();
             if ($roundTeamPlayers) {
                 foreach ($roundTeamPlayers as $roundTeamPlayer) {
                     $roundTeamPlayer->is_win = $is_win;
+                    $roundTeamPlayer->score = (int)apcu_fetch('player'.$roundTeamPlayer->player_id);
                     $roundTeamPlayer->save();
                 }
             }
             $result = $this::actionStart();
+            $result['success'] = true;
+        }
+        */
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
+    public function actionForceEnd() {
+        // input
+        $round_id = empty($this->params['round_id'])?'':$this->params['round_id'];
+
+        // output
+        $result['success'] = false;
+
+        if (!empty($round_id)) {
+            $round = Round::findOne($round_id);
+        } else {
+            $round = Round::find()->orderBy('id DESC')->one();
+        }
+        if ($round) {
+            // end this round
+            $round->is_end = 1;
+            $round->save();
+
+            // start the next round directly
+            $result = $this::actionStart();
+            $result['success'] = true;
         }
 
         $result['query_time'] = microtime(true) - $this->ini_time;

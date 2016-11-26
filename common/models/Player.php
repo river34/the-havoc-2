@@ -20,6 +20,7 @@ use Yii;
  */
 class Player extends \yii\db\ActiveRecord
 {
+
     /**
      * @inheritdoc
      */
@@ -37,7 +38,7 @@ class Player extends \yii\db\ActiveRecord
             [['name', 'key'], 'required'],
             [['score', 'mark', 'is_active'], 'integer'],
             [['updated_at', 'created_at'], 'safe'],
-            [['name', 'key', 'device'], 'string', 'max' => 255],
+            [['name', 'key', 'device', 'access_token', 'email', 'media'], 'string', 'max' => 255],
             [['ip'], 'string', 'max' => 45],
         ];
     }
@@ -55,6 +56,9 @@ class Player extends \yii\db\ActiveRecord
             'ip' => 'Ip',
             'score' => 'Score',
             'mark' => 'Mark',
+            'access_token' => 'Access Token',
+            'email' => 'Email',
+            'media' => 'Media',
             'is_active' => 'Is Active',
             'updated_at' => 'Updated At',
             'created_at' => 'Created At',

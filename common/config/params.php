@@ -37,4 +37,7 @@ return [
     'cool_down_time' => 5000,
     'destroy_time' => '-5 second',
     'score_dispear_time' => 500,
+
+    //
+    'check_secret' => 1,
 ];

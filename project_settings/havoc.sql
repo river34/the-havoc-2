@@ -1,6 +1,6 @@
 CREATE DATABASE `havoc` /*!40100 DEFAULT CHARACTER SET latin1 */;
 
-CREATE TABLE `havoc`.`player` (
+CREATE TABLE `player` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `key` varchar(255) NOT NULL,
@@ -8,11 +8,17 @@ CREATE TABLE `havoc`.`player` (
   `ip` varchar(45) DEFAULT NULL,
   `score` int(11) NOT NULL DEFAULT '0',
   `mark` tinyint(4) NOT NULL DEFAULT '0',
+  `access_token` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
+  `media` varchar(255) DEFAULT NULL,
   `is_active` tinyint(4) NOT NULL DEFAULT '1',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
+
 
 CREATE TABLE `havoc`.`map` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -27,18 +33,20 @@ CREATE TABLE `havoc`.`map` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-CREATE TABLE `havoc`.`round` (
+CREATE TABLE `round` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `is_team_ready` TINYINT(4) NOT NULL DEFAULT '0',
+  `is_team_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_mech_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_start` tinyint(4) NOT NULL DEFAULT '0',
   `is_end` tinyint(4) NOT NULL DEFAULT '0',
   `is_timeout` tinyint(4) NOT NULL DEFAULT '0',
+  `secret` varchar(45) DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
 
 CREATE TABLE `havoc`.`round_team_player` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

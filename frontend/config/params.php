@@ -48,4 +48,7 @@ return [
     'game_image' => 'images/scenes/05 game newer.jpg',
     'end_image' => 'images/scenes/06 result.jpg',
     'tutorial' => 'images/scenes/Mobile tutorial.png',
+
+    // ui elements
+    'close_btn' => 'images/scenes/close_white.png',
 ];
