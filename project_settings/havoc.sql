@@ -36,6 +36,7 @@ CREATE TABLE `havoc`.`map` (
 CREATE TABLE `round` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `is_team_ready` tinyint(4) NOT NULL DEFAULT '0',
+  `is_player_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_mech_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_start` tinyint(4) NOT NULL DEFAULT '0',
@@ -48,19 +49,22 @@ CREATE TABLE `round` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-CREATE TABLE `havoc`.`round_team_player` (
+
+CREATE TABLE `round_team_player` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `round_id` int(11) NOT NULL,
-  `team_id` int(11) NOT NULL,
+  `team_id` int(11) NOT NULL DEFAULT '0',
   `player_id` int(11) NOT NULL,
   `resource` int(11) NOT NULL DEFAULT '1',
   `is_mech` tinyint(4) NOT NULL DEFAULT '0',
+  `is_ready` tinyint(4) NOT NULL DEFAULT '0',
   `is_win` tinyint(4) DEFAULT NULL,
   `score` int(11) NOT NULL DEFAULT '0',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=latin1;
+
 
 CREATE TABLE `havoc`.`team` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -74,15 +78,21 @@ CREATE TABLE `havoc`.`team` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-CREATE TABLE `havoc`.`round_team_player` (
+CREATE TABLE `round_team_player` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `round_id` int(11) NOT NULL,
-  `team_id` int(11) NOT NULL,
+  `team_id` int(11) NOT NULL DEFAULT '0',
   `player_id` int(11) NOT NULL,
+  `resource` int(11) NOT NULL DEFAULT '1',
+  `is_mech` tinyint(4) NOT NULL DEFAULT '0',
+  `is_ready` tinyint(4) NOT NULL DEFAULT '0',
+  `is_win` tinyint(4) DEFAULT NULL,
+  `score` int(11) NOT NULL DEFAULT '0',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
 
 CREATE TABLE `triangle` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -101,6 +111,16 @@ CREATE TABLE `log` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+
+CREATE TABLE `havoc`.`game` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `resource` INT NOT NULL,
+  `core_score` INT NOT NULL,
+  `updated_at` VARCHAR(45) NOT NULL DEFAULT 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+  `created_at` VARCHAR(45) NOT NULL DEFAULT 'CURRENT_TIMESTAMP',
+  PRIMARY KEY (`id`));
+
 
 
 TRUNCATE `havoc`.`map`;

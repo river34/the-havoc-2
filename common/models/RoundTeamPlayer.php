@@ -13,6 +13,7 @@ use Yii;
  * @property integer $player_id
  * @property integer $resource
  * @property integer $is_mech
+ * @property integer $is_ready
  * @property integer $is_win
  * @property integer $score
  * @property string $updated_at
@@ -35,7 +36,7 @@ class RoundTeamPlayer extends \yii\db\ActiveRecord
     {
         return [
             [['round_id', 'player_id'], 'required'],
-            [['round_id', 'team_id', 'player_id', 'resource', 'is_mech', 'is_win', 'score'], 'integer'],
+            [['round_id', 'team_id', 'player_id', 'resource', 'is_mech', 'is_ready', 'is_win', 'score'], 'integer'],
             [['updated_at', 'created_at'], 'safe'],
         ];
     }
@@ -52,6 +53,7 @@ class RoundTeamPlayer extends \yii\db\ActiveRecord
             'player_id' => 'Player ID',
             'resource' => 'Resource',
             'is_mech' => 'Is Mech',
+            'is_ready' => 'Is Ready',
             'is_win' => 'Is Win',
             'score' => 'Score',
             'updated_at' => 'Updated At',

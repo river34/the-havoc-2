@@ -59,8 +59,9 @@ header("Connection: Keep-alive");
             <input class="input" type="password" id="password" name="password" >
         </div>
         <div id="login-submit" class="input-field">
-            <input class="submit" type="submit" value="Login / Signup" onclick="loginSubmit();">
+            <input class="submit" type="submit" value="" onclick="loginSubmit();">
         </div>
+        <div id="login-close" onclick="location.reload();"></div>
         <!-- <input type="hidden" name="_csrf" value="<?=Yii::$app->request->getCsrfToken()?>" /> -->
     </div>
     <!-- end of login form -->
@@ -72,8 +73,9 @@ header("Connection: Keep-alive");
             <input class="input" type="text" id="secret" name="secret" >
         </div>
         <div id="keycode-submit" class="input-field">
-            <input class="submit" type="submit" value="Submit" onclick="keycodeSubmit();">
+            <input class="submit" type="submit" value="" onclick="keycodeSubmit();">
         </div>
+        <div id="keycode-close" onclick="location.reload();"></div>
     </div>
     <!-- end of secret form -->
 
@@ -178,17 +180,18 @@ header("Connection: Keep-alive");
     width: <?=$scene_width?>px;
     height: <?=$scene_height?>px;
     z-index: 2100;
-    font-size: 36px;
+    font-size: 38px;
 }
 .input-form .input-field {
     position: absolute;
-    width: 600px;
-    left: 300px;
+    width: 700px;
+    left: 360px;
 }
 .input-form .input-field .title {
     position: absolute;
     width: 150px;
     left: 0;
+    display: none;
     color: <?=Yii::$app->params['main_text_color']?>;
 }
 .input-form .input-field .input {
@@ -197,43 +200,68 @@ header("Connection: Keep-alive");
     left: 200px;
     padding: 0 10px;
     border: none;
+    background: rgba(0, 0, 0, 0);
+    color: <?=Yii::$app->params['main_text_color']?>;
 }
 .input-form .input-field .submit {
     position: absolute;
     width: 600px;
+    height: 140px;
     left: 0;
-    background: black;
     border: none;
+    background: rgba(0, 0, 0, 0);
     color: <?=Yii::$app->params['main_text_color']?>;
 }
 #login-form #login-name {
     position: absolute;
-    top: 400px;
+    top: 394px;
 }
 #login-form #login-password {
     position: absolute;
-    top: 500px;
+    top: 544px;
 }
 #login-form #login-submit {
     position: absolute;
-    top: 600px;
+    top: 660px;
+}
+#login-form #login-close {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 150px;
+    background-color: rgba(0, 0, 0, 0);
 }
 #keycode-form #keycode-secret {
     position: absolute;
-    top: 400px;
+    top: 485px;
 }
 #keycode-form #keycode-submit {
     position: absolute;
     top: 600px;
 }
+#keycode-form #keycode-close {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 150px;
+    background-color: rgba(0, 0, 0, 0);
+}
 #keycode-form .input-field .title {
     width: 200px;
 }
 #keycode-form .input-field .input {
-    width: 350px;
-    left: 250px;
+    width: 400px;
+    left: 50px;
 }
-body{font-family:<?=Yii::$app->params['font']?>;}
+*:focus {
+    outline: none;
+}
+body {
+    font-family:<?=Yii::$app->params['font']?>;
+    background-color: black;
+}
 .loader {
     border: 16px solid #f3f3f3; /* Light grey */
     border-top: 16px solid <?=Yii::$app->params['main_color']?>;
@@ -339,17 +367,21 @@ body{font-family:<?=Yii::$app->params['font']?>;}
             "<?=Yii::$app->params['team_mech']?>",
             "<?=Yii::$app->params['team_0']?>",
             "<?=Yii::$app->params['team_1']?>",
+            "<?=Yii::$app->params['select_0']?>",
+            "<?=Yii::$app->params['select_0_un']?>",
             "<?=Yii::$app->params['select_1']?>",
             "<?=Yii::$app->params['select_1_un']?>",
-            "<?=Yii::$app->params['select_2']?>",
-            "<?=Yii::$app->params['select_2_un']?>",
             "<?=Yii::$app->params['start_image']?>",
             "<?=Yii::$app->params['teamup_image']?>",
             "<?=Yii::$app->params['bg_image']?>",
-            "<?=Yii::$app->params['game_image']?>",
+            "<?=Yii::$app->params['game_image_0']?>",
+            "<?=Yii::$app->params['game_image_1']?>",
             "<?=Yii::$app->params['end_image']?>",
             "<?=Yii::$app->params['tutorial']?>",
-            "<?=Yii::$app->params['close_btn']?>"
+            "<?=Yii::$app->params['keycode']?>",
+            "<?=Yii::$app->params['leaderboard']?>",
+            "<?=Yii::$app->params['login']?>",
+            "<?=Yii::$app->params['core_bar']?>"
         )
     //--><!]]>
 </script>
@@ -391,23 +423,20 @@ var teams;
 var team_score_1;
 var team_score_2;
 var game_time;
-var start_time;
-var end_time;
 var empty_slots;
 var name;
 var error;
 var secret;
 var check_secret;
+var core_score;
+var total_core_score;
+var is_inspector;
+var round_count;
 
 // preloaded images
 var team_tower_images = [];
 var my_tower_images = [];
 var colors = [];
-var start_image;
-var teamup_image;
-var end_image;
-var bg_image;
-var game_image;
 
 // interval
 var interval;
@@ -440,17 +469,6 @@ function init() {
     colors[0] = "<?=Yii::$app->params['team_background_color_0']?>";
     colors[1] = "<?=Yii::$app->params['team_background_color_1']?>";
 
-    start_image = new Image();
-    start_image.src = "<?=Yii::$app->params['start_image']?>";
-    end_image = new Image();
-    end_image.src = "<?=Yii::$app->params['end_image']?>";
-    teamup_image = new Image();
-    teamup_image.src = "<?=Yii::$app->params['teamup_image']?>";
-    bg_image = new Image();
-    bg_image.src = "<?=Yii::$app->params['bg_image']?>";
-    game_image = new Image();
-    game_image.src = "<?=Yii::$app->params['game_image']?>";
-
     init_draw();
 
     check_status = setInterval(function(){
@@ -473,8 +491,8 @@ function checkStatus () {
         success: function(response) {
             not_able_to_request = 0;
             hideLoading();
-            setCookie("key", response.data.player.key, 7);
             if (response.success) {
+                setCookie("key", response.data.player.key, 7);
                 is_login = 1;
                 is_open = response.data.is_open;
                 is_player_ready = response.data.is_player_ready;
@@ -491,15 +509,11 @@ function checkStatus () {
                 team_counts = response.data.team_counts;
                 round_score = response.data.round_score;
                 score = response.data.score;
-                // player_id = response.data.player.id;
-                // resource = response.data.roundTeamPlayer.resource;
-                // score = response.data.player.score;
-                // round_score = response.data.roundTeamPlayer.score;
-                // round_id = response.data.round.id;
-                // team_id = response.data.roundTeamPlayer.team_id;
+                team_id = response.data.team_id;
                 teams = response.data.teams;
                 empty_slots = response.data.empty_slots;
                 empty_player_slots = response.data.empty_player_slots;
+                is_inspector = response.data.is_inspector;
                 if (is_player_ready == 0 && is_start) { // player is not in current game
                     player_id = response.data.player.id;
                     name = response.data.player.name;
@@ -520,6 +534,7 @@ function checkStatus () {
                     round_id = response.data.round.id;
                 }
             } else {
+                setCookie("key", 0);
                 is_login = 1;
                 is_open = 0;
                 is_player_ready = 0;
@@ -535,6 +550,8 @@ function checkStatus () {
                 if (response.data.error == 'not_login') {
                     is_login = 0;
                     loginGame();
+                } else {
+                    name = response.data.player.name;
                 }
             }
             init_state();
@@ -583,6 +600,54 @@ function init_state() {
         startGame();
         return;
     }
+    // special cases for is_inspector account
+    if (is_inspector && is_ready && is_start == 0) {
+        startGameForInspector();
+        return;
+    }
+    if (is_inspector && is_start && is_end == 0) {
+        if (getCookie("start_time") == 0 || getCookie("end_time") == 0) {
+            setCookie("start_time", new Date().getTime());
+            setCookie("end_time", new Date().getTime() + 1000*60*3);
+        }
+        $("#grids").hide();
+        // game starts
+        clearInterval(check_status);
+        clearInterval(interval);
+        // drawInfo('enter');
+        interval = setInterval(function(){
+            var time = getCookie("end_time") - new Date().getTime();
+            if (time < 0){
+                time = 0;
+            }
+            game_time = Math.floor(time/1000/60) + ":" + Math.floor(time/1000%60);
+            //game_time = Math.round(100 * (getCookie("end_time") - getCookie("start_time"))/1000/60)/100;
+            if (not_able_to_request > 0) {
+                return;
+            }
+            not_able_to_request = 1;
+            updateMap();
+        }, <?=Yii::$app->params['refresh_rate']?>);
+
+        // load game scene
+        showLoading();
+        setTimeout(function(){
+            $('#info').hide(); $('#main').show(); $('#grids').show(); hideLoading();
+        }, <?=Yii::$app->params['load_scene_time']?>);
+        drawGameBg();
+    }
+
+    if (is_inspector && is_start && is_end) {
+        setCookie("is_started", 0);
+        setCookie("start_time", 0);
+        setCookie("end_time", 0);
+        // game ends
+        clearInterval(check_status);
+        clearInterval(interval);
+        endGameForInspector();
+    }
+
+    // normal cases
     if (is_open && is_player_ready == 0) {
         // join this round
         startGame();
@@ -593,8 +658,10 @@ function init_state() {
         return;
     }
     if (is_player_ready && is_player_in_team == 0) {
-        drawTeams();
+        TeamUpGame();
         // drawText("<?=Yii::$app->params['title']?>", 'Join in a Team');
+        setCookie("start_time", 0);
+        setCookie("end_time", 0);
     }
     if (is_player_ready && is_player_in_team && is_team_ready == 0) {
         // wait for other teammates / other team to get ready
@@ -607,14 +674,18 @@ function init_state() {
         // wait for mech to get ready
         drawInfo('tutorial');
         drawText("<?=Yii::$app->params['title']?>", 'Wait for Mech');
+        setCookie("start_time", 0);
+        setCookie("end_time", 0);
     }
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready && is_start == 0) {
         // wait for mech to get ready
         drawInfo('tutorial');
         drawText("<?=Yii::$app->params['title']?>", 'Wait for Mech');
+        setCookie("start_time", 0);
+        setCookie("end_time", 0);
     }
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready && is_start && is_end == 0) {
-        if (getCookie("start_time") == 0 && getCookie("end_time") == 0) {
+        if (getCookie("start_time") == 0 || getCookie("end_time") == 0) {
             setCookie("start_time", new Date().getTime());
             setCookie("end_time", new Date().getTime() + 1000*60*3);
         }
@@ -636,9 +707,6 @@ function init_state() {
             updateMap();
         }, <?=Yii::$app->params['refresh_rate']?>);
 
-        // drawText('', 'Place tower to steal power', score, round_score, rank);
-        // drawText("", null, null, round_score, null, team_score_1, team_score_2);
-
         // load game scene
         showLoading();
         setTimeout(function(){
@@ -649,6 +717,8 @@ function init_state() {
 
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready && is_start && is_end) {
         setCookie("is_started", 0);
+        setCookie("start_time", 0);
+        setCookie("end_time", 0);
         // game ends
         clearInterval(check_status);
         clearInterval(interval);
@@ -656,41 +726,25 @@ function init_state() {
         // drawText("<?=Yii::$app->params['title']?>", 'Game Ends');
     }
 }
-function drawTeams() {
+function TeamUpGame() {
+    hideScenes();
+
+    if (getCookie('is_festival') && getCookie('team_id')) {
+        selectTeam(getCookie('team_id'));
+        return;
+    }
+
     if (teamup.getChildByName("bg") == null) {
-        teamup_image = new Image();
-        teamup_image.src = "<?=Yii::$app->params['teamup_image']?>";
-        teamup_image.onload = function() {
-            var bitmap = new createjs.Bitmap(teamup_image);
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['teamup_image']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
             bitmap.name = "bg";
             teamup.addChild(bitmap);
             teamup.setChildIndex(bitmap, 0);
             teamup.update();
         }
     }
-
-    // if (teamup.getChildByName("select_1_un") == null) {
-    //     var image = new Image();
-    //     image.src = "<?=Yii::$app->params['select_1_un']?>";
-    //     image.onload = function() {
-    //         var bitmap = new createjs.Bitmap(image);
-    //         bitmap.name = "select_1_un";
-    //         bitmap.x = 600;
-    //         teamup.addChild(bitmap);
-    //         teamup.update();
-    //     }
-    // }
-    // if (teamup.getChildByName("select_2_un") == null) {
-    //     var image = new Image();
-    //     image.src = "<?=Yii::$app->params['select_2_un']?>";
-    //     image.onload = function() {
-    //         var bitmap = new createjs.Bitmap(image);
-    //         bitmap.name = "select_2_un";
-    //         bitmap.x = 0;
-    //         teamup.addChild(bitmap);
-    //         teamup.update();
-    //     }
-    // }
     if (teams != null) {
         var odd;
         var color;
@@ -709,91 +763,94 @@ function drawTeams() {
             }
             if (teams[i]['is_ready'] == 0) {
                 if (i == 0){
-                    if (teamup.getChildByName("select_1") == null) {
-                        var image = new Image();
-                        image.src = "<?=Yii::$app->params['select_1']?>";
-                        image.onload = function() {
-                            var bitmap = new createjs.Bitmap(image);
-                            bitmap.name = "select_1";
+                    if (teamup.getChildByName("select_0") == null) {
+                        var image_1 = new Image();
+                        image_1.src = "<?=Yii::$app->params['select_0']?>";
+                        image_1.onload = function() {
+                            var bitmap = new createjs.Bitmap(image_1);
+                            bitmap.name = "select_0";
                             bitmap.x = 580;
                             bitmap.y = 667;
                             teamup.addChild(bitmap);
                             teamup.update();
                         }
+                        var text_1 = new createjs.Text(teams[i]['limit']-team_counts[i], '18px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                        text_1.x = 625;
+                        text_1.y = 911;
+                        text_1.textAlign = 'right';
+                        teamup.addChild(text_1);
+                        teamup.update();
                     }
                 }
                 else if (i == 1){
-                    if (teamup.getChildByName("select_2") == null) {
+                    if (teamup.getChildByName("select_1") == null) {
                         var image_2 = new Image();
-                        image_2.src = "<?=Yii::$app->params['select_2']?>";
+                        image_2.src = "<?=Yii::$app->params['select_1']?>";
                         image_2.onload = function() {
                             var bitmap = new createjs.Bitmap(image_2);
-                            bitmap.name = "select_2";
+                            bitmap.name = "select_1";
                             bitmap.x = 0;
                             bitmap.y = 667;
                             teamup.addChild(bitmap);
                             teamup.update();
                         }
+                        var text_2 = new createjs.Text(teams[i]['limit']-team_counts[i], '18px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                        text_2.x = 502;
+                        text_2.y = 740;
+                        teamup.addChild(text_2);
+                        teamup.update();
                     }
                 }
                 rect.on("click", function(event) {
-                    //alert(this.id);
+                    setCookie('team_id', this.id);
                     selectTeam(this.id);
                 });
             } else {
                 if (i == 0){
-                    if (teamup.getChildByName("select_1_un") == null) {
+                    if (teamup.getChildByName("select_0_un") == null) {
                         var imag_3 = new Image();
-                        imag_3.src = "<?=Yii::$app->params['select_1_un']?>";
+                        imag_3.src = "<?=Yii::$app->params['select_0_un']?>";
                         imag_3.onload = function() {
                             var bitmap = new createjs.Bitmap(imag_3);
-                            bitmap.name = "select_1_un";
+                            bitmap.name = "select_0_un";
                             bitmap.x = 580;
                             bitmap.y = 667;
                             teamup.addChild(bitmap);
                             teamup.update();
                         }
+                        var text_3 = new createjs.Text(teams[i]['limit']-team_counts[i], '18px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                        text_3.x = 625;
+                        text_3.y = 911;
+                        text_3.textAlign = 'right';
+                        teamup.addChild(text_3);
+                        teamup.update();
                     }
                 }
                 else if (i == 1){
-                    if (teamup.getChildByName("select_2_un") == null) {
+                    if (teamup.getChildByName("select_1_un") == null) {
                         var imag_4 = new Image();
-                        imag_4.src = "<?=Yii::$app->params['select_2_un']?>";
+                        imag_4.src = "<?=Yii::$app->params['select_1_un']?>";
                         imag_4.onload = function() {
                             var bitmap = new createjs.Bitmap(imag_4);
-                            bitmap.name = "select_2_un";
+                            bitmap.name = "select_1_un";
                             bitmap.x = 0;
                             bitmap.y = 667;
                             teamup.addChild(bitmap);
                             teamup.update();
                         }
+                        var text_4 = new createjs.Text(teams[i]['limit']-team_counts[i], '18px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                        text_4.x = 502;
+                        text_4.y = 740;
+                        teamup.addChild(text_4);
+                        teamup.update();
                     }
                 }
             }
-            // for (var j=0; j<teams[i]['limit']; j++) {
-            //     var rect = teamup.getChildByName("team_"+teams[i]['id']+'_'+j);
-            //     if (rect == null) {
-            //         rect = new createjs.Shape();
-            //         rect.graphics.beginFill("<?=Yii::$app->params['light_grey_color']?>").drawRect(0, 0, <?=$map_width?>/teams.length/teams[i]['limit'], <?=$grid_height?>);
-            //         rect.x = j*<?=$map_width?>/teams.length/teams[i]['limit'] + i*<?=$map_width?>/teams.length + <?=$offset_x?>;
-            //         rect.y = <?=$map_height?> - <?=$grid_height?> + <?=$offset_y?>;
-            //         rect.name = "team_"+teams[i]['id']+'_'+j;
-            //         teamup.addChild(rect);
-            //     }
-            //     if (j < team_counts[i]) {
-            //         rect.alpha = 1;
-            //     } else {
-            //         rect.alpha = 0.5;
-            //     }
-            //     rect.graphics.beginFill(color);
-            // }
             teamup.update();
         }
     }
     teamup.update();
     $('#teamup').show();
-    $('#info').hide();
-    $('#main').hide();
 }
 function drawInfo(index) {
     if (index == 'tutorial') {
@@ -872,6 +929,7 @@ function drawInfo(index) {
 
             createjs.Ticker.on("tick", tick);
             createjs.Ticker.setFPS(2);
+            createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;
             function tick (event) {
                 if (tri.alpha == 0.4) {
                     tri.alpha = 0.2;
@@ -934,10 +992,10 @@ function drawBackground() {
     // }
     //$("#background").after(bg_image.src);
     if (background.getChildByName("bg") == null) {
-        bg_image = new Image();
-        bg_image.src = "<?=Yii::$app->params['bg_image']?>";
-        bg_image.onload = function() {
-            var bitmap = new createjs.Bitmap(bg_image);
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['bg_image']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
             bitmap.name = "bg";
             background.addChild(bitmap);
             background.setChildIndex(bitmap,-4000);
@@ -1054,7 +1112,6 @@ function updateMap() {
         dataType : 'json',
         success: function(response) {
             not_able_to_request = 0;
-            setCookie("key", response.data.player.key, 7);
             name = response.data.player.name;
             is_start = response.data.is_start;
             is_end = response.data.is_end;
@@ -1065,10 +1122,13 @@ function updateMap() {
             team_score_1 = response.data.team_score_1;
             team_score_2 = response.data.team_score_2;
             resource = response.data.resource;
+            core_score = response.data.core;
+            total_core_score = response.data.total_core_score;
             if (response.success) {
+                setCookie("key", response.data.player.key, 7);
                 if (is_start && is_end==0) {
                     drawGame(response.data.grids, response.data.remains, response.data.triangles);
-                    drawText("", null, null, round_score, null, team_score_1, team_score_2, response.data.core);
+                    drawText("", null, null, round_score, null, team_score_1, team_score_2, core_score);
                 }
             }
             if (is_end) {
@@ -1081,7 +1141,7 @@ function updateMap() {
         }
     });
 }
-function joinGame() {
+function joinGame(shadow) {
     showLoading();
     $.ajax({
         // method: "POST",
@@ -1089,12 +1149,16 @@ function joinGame() {
         data: {
             key: getCookie('key'),
             secret: $('#secret').val(),
+            shadow: shadow,
         },
         dataType : 'json',
         success: function(response) {
             hideLoading();
-            setCookie("key", response.data.player.key, 7);
             if (response.success) {
+                setCookie("key", response.data.player.key, 7);
+                if (response.data.is_festival) {
+                    setCookie("is_festival", 1);
+                }
                 location.reload();
             } else {
                 if (response.data.error == 'wrong_secret') {
@@ -1112,19 +1176,52 @@ function keycodeGame() {
     clearInterval(check_status);
     clearInterval(interval);
 
+    if (keycode.getChildByName("bg") == null) {
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['keycode']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
+            bitmap.name = "bg";
+            keycode.addChild(bitmap);
+            keycode.setChildIndex(bitmap, 0);
+            keycode.update();
+        }
+    }
+
     if (error) {
         if (keycode.getChildByName('keycode_hint') == null) {
             var text = new createjs.Text(error, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
             text.textAlign = 'center';
             text.name = 'keycode_hint';
             text.x = <?=$scene_width/2?>;
-            text.y = 680;
+            text.y = 960;
             keycode.addChild(text);
             keycode.setChildIndex(text, keycode.getNumChildren()-1);
             keycode.update();
+        } else {
+            keycode.getChildByName('keycode_hint').text = error;
         }
     }
 
+    // close button
+    if (keycode.getChildByName("close") == null) {
+        var rect = new createjs.Shape();
+        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 300, 150);
+        rect.x = 0;
+        rect.y = 0;
+        rect.alpha = 0.01;
+        rect.name = "close";
+        rect.on("click", function(event) {
+            // close keycode = back to start game
+            // startGame();
+            location.reload();
+        });
+        keycode.addChild(rect);
+        keycode.setChildIndex(rect, keycode.getNumChildren()-1);
+        keycode.update();
+    }
+
+    keycode.update();
     $('#keycode').show();
     $('#keycode-form').show();
 }
@@ -1135,17 +1232,17 @@ function loginGame() {
     clearInterval(check_status);
     clearInterval(interval);
 
-    // if (login.getChildByName("bg") == null) {
-    //     var image = new Image();
-    //     image.src = "<?=Yii::$app->params['bg_image']?>";
-    //     image.onload = function() {
-    //         var bitmap = new createjs.Bitmap(image);
-    //         bitmap.name = "bg";
-    //         login.addChild(bitmap);
-    //         login.setChildIndex(bitmap, 0);
-    //         login.update();
-    //     }
-    // }
+    if (login.getChildByName("bg") == null) {
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['login']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
+            bitmap.name = "bg";
+            login.addChild(bitmap);
+            login.setChildIndex(bitmap, 0);
+            login.update();
+        }
+    }
 
     if (is_login == 0 && error) {
         if (login.getChildByName('login_hint') == null) {
@@ -1153,10 +1250,12 @@ function loginGame() {
             text.textAlign = 'center';
             text.name = 'login_hint';
             text.x = <?=$scene_width/2?>;
-            text.y = 680;
+            text.y = 960;
             login.addChild(text);
             login.setChildIndex(text, login.getNumChildren()-1);
             login.update();
+        } else {
+            login.getChildByName('login_hint').text = error;
         }
     }
 
@@ -1164,7 +1263,7 @@ function loginGame() {
     $('#login-form').show();
 }
 
-function leaderBoard() {
+function leaderboardGame() {
     hideScenes();
 
     clearInterval(check_status);
@@ -1173,62 +1272,101 @@ function leaderBoard() {
     setCookie("leaderboard", 1);
 
     /////////////////////////////////////////////
-    ////   need to check the leaderBoard
+    ////   need to check the leaderboard
     /////////////////////////////////////////////
 
     if (leaderboard.getChildByName("bg") == null) {
-        var rect = new createjs.Shape();
-        rect.graphics.beginFill("<?=Yii::$app->params['background_color']?>").drawRect(0, 0, 600, 800);
-        rect.x = <?=$scene_width/2?> - 600/2;
-        rect.y = 100;
-        rect.alpha = 0.5;
-        rect.name = "bg";
-        leaderboard.addChild(rect);
-        leaderboard.setChildIndex(rect, 0);
-        leaderboard.update();
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['leaderboard']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
+            bitmap.name = "bg";
+            leaderboard.addChild(bitmap);
+            leaderboard.setChildIndex(bitmap, 0);
+            leaderboard.update();
+        }
     }
 
-    if (leaderboard.getChildByName("title") == null) {
-        var text = new createjs.Text('Leaderboard', '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
-        text.textAlign = 'center';
-        text.name = 'title';
-        text.x = <?=$scene_width/2?>;
-        text.y = 200;
-        leaderboard.addChild(text);
-        leaderboard.setChildIndex(text, leaderboard.getNumChildren()-1);
-        leaderboard.update();
-    }
+    // if (leaderboard.getChildByName("title") == null) {
+    //     var text = new createjs.Text('Leaderboard', '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+    //     text.textAlign = 'center';
+    //     text.name = 'title';
+    //     text.x = <?=$scene_width/2?>;
+    //     text.y = 200;
+    //     leaderboard.addChild(text);
+    //     leaderboard.setChildIndex(text, leaderboard.getNumChildren()-1);
+    //     leaderboard.update();
+    // }
 
     if (ranks) {
         if (leaderboard.getChildByName("list") == null) {
             var list = new createjs.Container();
             list.name = "list";
-            list.x = 300;
-            list.y = 300;
+            list.x = 0;
+            list.y = 174;
 
             for (var i=0; i<ranks.length; i++) {
-                var text1 = new createjs.Text(ranks[i]['rank'], '24px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
-                text1.textAlign = 'left';
-                text1.x = 50;
-                text1.y = i*50;
+                // var text1 = new createjs.Text(ranks[i]['rank'], '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                // text1.textAlign = 'left';
+                // text1.x = 50;
+                // text1.y = i*50;
 
-                var text2 = new createjs.Text(ranks[i]['name'], '24px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+                var text2 = new createjs.Text(ranks[i]['name'], '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
                 text2.textAlign = 'left';
-                text2.x = 100;
-                text2.y = i*50;
+                text2.x = 230;
+                text2.y = i*71;
+                text2.alpha = 0.8;
 
-                var text3 = new createjs.Text(ranks[i]['score'], '24px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+                var text3 = new createjs.Text(ranks[i]['score'], '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
                 text3.textAlign = 'right';
-                text3.x = 550;
-                text3.y = i*50;
+                text3.x = 800;
+                text3.y = i*71;
+                text3.alpha = 0.8;
 
-                var border = new createjs.Shape();
-                border.graphics.beginFill("<?=Yii::$app->params['main_color']?>").drawRect(0, 0, 500, 1);
-                border.x = 50;
-                border.y = i*50 + 40;
-                border.alpha = 0.5;
+                var text4 = new createjs.Text(ranks[i]['round_count'] + "    BATTLES", '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                text4.textAlign = 'right';
+                text4.x = 1035;
+                text4.y = i*71;
+                text4.alpha = 0.8;
 
-                list.addChild(text1, text2, text3, border);
+                // var border = new createjs.Shape();
+                // border.graphics.beginFill("<?=Yii::$app->params['main_color']?>").drawRect(0, 0, 500, 1);
+                // border.x = 50;
+                // border.y = i*50 + 40;
+                // border.alpha = 0.5;
+
+                list.addChild(text2, text3, text4);
+            }
+
+            if (rank) {
+                var text = new createjs.Text(rank, '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                text.textAlign = 'left';
+                text.x = 360;
+                text.y = 905;
+                text.alpha = 0.8;
+                leaderboard.addChild(text);
+                leaderboard.setChildIndex(text, leaderboard.getNumChildren()-1);
+            }
+
+            if (score == 0 || score) {
+                var text = new createjs.Text(score, '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                text.textAlign = 'left';
+                text.x = 605;
+                text.y = 905;
+                text.alpha = 0.8;
+                leaderboard.addChild(text);
+                leaderboard.setChildIndex(text, leaderboard.getNumChildren()-1);
+            }
+
+            if (round_count == 0 || round_count) {
+                var text = new createjs.Text(round_count, '32px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+                text.textAlign = 'left';
+                text.textAlign = 'right';
+                text.x = 1035;
+                text.y = 905;
+                text.alpha = 0.8;
+                leaderboard.addChild(text);
+                leaderboard.setChildIndex(text, leaderboard.getNumChildren()-1);
             }
 
             leaderboard.addChild(list);
@@ -1240,10 +1378,10 @@ function leaderBoard() {
     // close button
     if (leaderboard.getChildByName("close") == null) {
         var rect = new createjs.Shape();
-        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 100, 100);
-        rect.x = 900-100;
-        rect.y = 100;
-        rect.alpha = 0.5;
+        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 300, 150);
+        rect.x = 0;
+        rect.y = 0;
+        rect.alpha = 0.01;
         rect.name = "close";
         rect.on("click", function(event) {
             // close leader board = back to start game
@@ -1254,24 +1392,31 @@ function leaderBoard() {
         leaderboard.addChild(rect);
         leaderboard.setChildIndex(rect, leaderboard.getNumChildren()-1);
         leaderboard.update();
-
-        var image = new Image();
-        image.src = "<?=Yii::$app->params['close_btn']?>";
-        image.onload = function() {
-            var bitmap = new createjs.Bitmap(image);
-            bitmap.name = "close_btn";
-            bitmap.x = 900-50;
-            bitmap.y = 100;
-            bitmap.scaleX = 50/image.width;
-            bitmap.scaleY = 50/image.height;
-            leaderboard.addChild(bitmap);
-            leaderboard.setChildIndex(bitmap, leaderboard.getNumChildren()-2);
-            leaderboard.update();
-        }
     }
 
     leaderboard.update();
     $("#leaderboard").show();
+}
+
+function logout() {
+    showLoading();
+    $.ajax({
+        // method: "POST",
+        url: "<?= '../../api/web/index.php?r=round/logout'; ?>",
+        data: {
+            key: getCookie('key'),
+        },
+        dataType : 'json',
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                is_login = 0;
+                loginGame();
+            } else {
+                //
+            }
+        }
+    });
 }
 
 function getLeaderBoard() {
@@ -1286,11 +1431,17 @@ function getLeaderBoard() {
         dataType : 'json',
         success: function(response) {
             hideLoading();
-            setCookie("key", response.data.player.key, 7);
             if (response.success) {
+                setCookie("key", response.data.player.key, 7);
                 rank = response.data.rank;
                 ranks = response.data.ranks;
-                leaderBoard();
+                round_count = response.data.round_count;
+                leaderboardGame();
+            } else {
+                if (response.data.error == 'not_login') {
+                    is_login = 0;
+                    loginGame();
+                }
             }
         }
     });
@@ -1307,21 +1458,58 @@ function checkSecret() {
         dataType : 'json',
         success: function(response) {
             hideLoading();
-            setCookie("key", response.data.player.key, 7);
+            var secret;
             if (response.success) {
-                // secret = response.data.secret;
+                secret = response.data.secret;
                 check_secret = response.data.check_secret;
             } else {
-                // secret = '';
+                secret = '';
                 check_secret = 0;
             }
             if (check_secret == 0) {
                 joinGame();
+            } else if (getCookie('is_festival') || is_inspector) {
+                joinGame(secret);
             } else {
                 keycodeGame();
             }
         }
     });
+}
+
+function startGameForInspector() {
+    hideScenes();
+
+    if (start.getChildByName("bg") == null) {
+        var image = new Image();
+        image.src = "<?=Yii::$app->params['start_image']?>";
+        image.onload = function() {
+            var bitmap = new createjs.Bitmap(image);
+            bitmap.name = "bg";
+            start.addChild(bitmap);
+            start.setChildIndex(bitmap, 0);
+            start.update();
+        }
+    }
+
+    if (start.getChildByName("leaderboard") == null) {
+        var rect = new createjs.Shape();
+        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 400, 120);
+        rect.name = "leaderboard";
+        rect.alpha = 0.01;
+        rect.x = <?=$scene_width/2?> - 200;
+        rect.y = <?=$scene_height/2?> + 160;
+        rect.on("click", function(event) {
+            setCookie("start", 0);
+            getLeaderBoard();
+        });
+        start.addChild(rect);
+        start.setChildIndex(rect, start.getNumChildren()-1);
+        start.update();
+    }
+
+    start.update();
+    $('#start').show();
 }
 
 function startGame() {
@@ -1346,9 +1534,9 @@ function startGame() {
 
     if (start.getChildByName("start") == null) {
         var rect = new createjs.Shape();
-        rect.graphics.beginFill("#000000").drawRect(0, 0, 400, 200);
+        rect.graphics.beginFill("#000000").drawRect(0, 0, 400, 120);
         rect.name = "start";
-        rect.alpha = 0.5;
+        rect.alpha = 0.01;
         rect.x = <?=$scene_width/2?> - 200;
         rect.y = <?=$scene_height/2?>;
         if (is_open) {
@@ -1358,7 +1546,7 @@ function startGame() {
                 checkSecret();
             });
         } else if (is_open == 0) {
-            rect.alpha = 0.1;
+            // rect.alpha = 0.1;
         }
         start.addChild(rect);
         start.setChildIndex(rect, start.getNumChildren()-1);
@@ -1367,11 +1555,11 @@ function startGame() {
 
     if (start.getChildByName("leaderboard") == null) {
         var rect = new createjs.Shape();
-        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 400, 200);
+        rect.graphics.beginFill("#ff0000").drawRect(0, 0, 400, 120);
         rect.name = "leaderboard";
-        rect.alpha = 0.5;
+        rect.alpha = 0.01;
         rect.x = <?=$scene_width/2?> - 200;
-        rect.y = <?=$scene_height/2?> + 200;
+        rect.y = <?=$scene_height/2?> + 160;
         rect.on("click", function(event) {
             setCookie("start", 0);
             getLeaderBoard();
@@ -1381,15 +1569,33 @@ function startGame() {
         start.update();
     }
 
-    if (is_login) {
+    if (start.getChildByName("logout") == null) {
+        var rect = new createjs.Shape();
+        rect.graphics.beginFill("#00ff00").drawRect(0, 0, 400, 120);
+        rect.name = "leaderboard";
+        rect.alpha = 0.01;
+        rect.x = <?=$scene_width/2?> - 200;
+        rect.y = <?=$scene_height/2?> + 320;
+        rect.on("click", function(event) {
+            setCookie("start", 0);
+            logout();
+        });
+        start.addChild(rect);
+        start.setChildIndex(rect, start.getNumChildren()-1);
+        start.update();
+    }
+
+    if (is_login && name) {
         if (start.getChildByName('login_hint') == null) {
             var text = new createjs.Text('welcome, ' + name, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
             text.textAlign = 'center';
             text.name = 'login_hint';
             text.x = <?=$scene_width/2?>;
-            text.y = 700;
+            text.y = 960;
             start.addChild(text);
             start.update();
+        } else {
+            start.getChildByName('login_hint').text = 'welcome, ' + name;
         }
     }
 
@@ -1436,6 +1642,8 @@ function drawText(title, hint, score, round_score, rank, team_score_1, team_scor
             string.x = <?=$scene_width/2?>;
             string.y = 60;
             main.addChild(string);
+            main.setChildIndex(string, main.getNumChildren()-1);
+            main.update();
         }
         main.getChildByName("title").text = title;
     }
@@ -1448,43 +1656,72 @@ function drawText(title, hint, score, round_score, rank, team_score_1, team_scor
             string.x = <?=$scene_width/2?>;
             string.y = 220;
             main.addChild(string);
+            main.setChildIndex(string, main.getNumChildren()-1);
+            main.update();
         }
         main.getChildByName("hint").text = hint;
     } else {
         main.removeChild(main.getChildByName("hint"));
     }
 
-    // core
-    if (main.getChildByName("core") == null) {
-        var string = new createjs.Text(core, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
-        string.textAlign = 'left';
-        string.name = 'core';
-        string.x = 313;
-        string.y = 293;
-        main.addChild(string);
-    }
-    main.getChildByName("core").text = core;
-
     // timer
     if (main.getChildByName("timer") == null) {
         var string = new createjs.Text(game_time, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
-        string.textAlign = 'left';
+        string.textAlign = 'right';
         string.name = 'timer';
-        string.x = 313;
-        string.y = 205;
+        string.x = 430;
+        string.y = 245;
+        string.shadow = new createjs.Shadow("#000000", 0, 5, 10);
         main.addChild(string);
+        main.setChildIndex(string, main.getNumChildren()-1);
+        main.update();
     }
     main.getChildByName("timer").text = game_time;
+
+    // core
+    if (core_score != null && total_core_score != null) {
+        if (main.getChildByName("core_score") == null) {
+            var string = new createjs.Text(core_score, '30px <?=Yii::$app->params['font']?>', '#ffff00');
+            string.textAlign = 'right';
+            string.name = 'core_score';
+            string.x = 430;
+            string.y = 430;
+            string.shadow = new createjs.Shadow("#000000", 0, 5, 10);
+            main.addChild(string);
+            main.setChildIndex(string, main.getNumChildren()-1);
+            main.update();
+        } if (main.getChildByName("core_bar") == null) {
+            var image = new Image();
+            image.src = "<?=Yii::$app->params['core_bar']?>";
+            image.onload = function() {
+                var bitmap = new createjs.Bitmap(image);
+                bitmap.name = "core_bar";
+                bitmap.x = 321 + (1-core_score/total_core_score) * 108; // 108 = image.width
+                bitmap.y = 413;
+                bitmap.scaleX = core_score/total_core_score;
+                main.addChild(bitmap);
+                main.setChildIndex(bitmap, main.getNumChildren()-1);
+                main.update();
+            }
+        } else {
+            main.getChildByName("core_score").text = core_score;
+            main.getChildByName("core_bar").scaleX = core_score/total_core_score;
+            main.getChildByName("core_bar").x = 321 + (1-core_score/total_core_score) * 108;
+        }
+    }
 
     // ice team
     if (team_score_1 != null) {
         if (main.getChildByName("team_score_1") == null) {
-            var string = new createjs.Text(team_score_1, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
-            string.textAlign = 'left';
+            var string = new createjs.Text(team_score_1, '30px <?=Yii::$app->params['font']?>', '#0000ff');
+            string.textAlign = 'right';
             string.name = 'team_score_1';
-            string.x = 313;
-            string.y = 380;
+            string.x = 430;
+            string.y = 600;
+            string.shadow = new createjs.Shadow("#000000", 0, 5, 10);
             main.addChild(string);
+            main.setChildIndex(string, main.getNumChildren()-1);
+            main.update();
         }
         main.getChildByName("team_score_1").text = team_score_1;
     }
@@ -1492,12 +1729,15 @@ function drawText(title, hint, score, round_score, rank, team_score_1, team_scor
     // fire team
     if (team_score_2 != null) {
         if (main.getChildByName("team_score_2") == null) {
-            var string = new createjs.Text(team_score_2, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
-            string.textAlign = 'left';
+            var string = new createjs.Text(team_score_2, '30px <?=Yii::$app->params['font']?>', '#ff0000');
+            string.textAlign = 'right';
             string.name = 'team_score_2';
-            string.x = 313;
-            string.y = 465;
+            string.x = 430;
+            string.y = 510;
+            string.shadow = new createjs.Shadow("#000000", 0, 5, 10);
             main.addChild(string);
+            main.setChildIndex(string, main.getNumChildren()-1);
+            main.update();
         }
         main.getChildByName("team_score_2").text = team_score_2;
     }
@@ -1506,11 +1746,14 @@ function drawText(title, hint, score, round_score, rank, team_score_1, team_scor
     if (round_score != null) {
         if (main.getChildByName("round_score") == null) {
             var string = new createjs.Text(round_score, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
-            string.textAlign = 'left';
+            string.textAlign = 'right';
             string.name = 'round_score';
-            string.x = 313;
-            string.y = 553;
+            string.x = 430;
+            string.y = 335;
+            string.shadow = new createjs.Shadow("#000000", 0, 5, 10);
             main.addChild(string);
+            main.setChildIndex(string, main.getNumChildren()-1);
+            main.update();
         }
         main.getChildByName("round_score").text = round_score;
     }
@@ -1653,6 +1896,7 @@ function drawRemain(id, team_id) {
 
         createjs.Ticker.on("tick", tick);
         createjs.Ticker.setFPS(20);
+        createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;
         function tick (event) {
             //rect.scaleY -= 0.01;
             rect.alpha -= 0.01;
@@ -1721,6 +1965,7 @@ function drawTower(id, team_id, tower_player_id, score_rate) {
 
             createjs.Ticker.on("tick", tick);
             createjs.Ticker.setFPS(20);
+            createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;
             function tick (event) {
                 text.y -= 2;
                 text.alpha -= 0.1;
@@ -1733,18 +1978,34 @@ function drawTower(id, team_id, tower_player_id, score_rate) {
         } else {
             main.getChildByName('tower_' + id + '_score_rate').text = '+ ' + score_rate;
         }
+
+        if (score_rate == 0) {
+            main.getChildByName('tower_' + id + '_score_rate').text = '';
+        }
     }
 }
 function drawGameBg() {
     if (main.getChildByName("bg") == null) {
-        game_image = new Image();
-        game_image.src = "<?=Yii::$app->params['game_image']?>";
-        game_image.onload = function() {
-            var bitmap = new createjs.Bitmap(game_image);
-            main.name = "bg";
-            main.addChild(bitmap);
-            main.setChildIndex(bitmap, 0);
-            main.update();
+        if (team_id == 2) {
+            var image = new Image();
+            image.src = "<?=Yii::$app->params['game_image_0']?>";
+            image.onload = function() {
+                var bitmap = new createjs.Bitmap(image);
+                main.name = "bg";
+                main.addChild(bitmap);
+                main.setChildIndex(bitmap, 0);
+                main.update();
+            }
+        } else {
+            var image = new Image();
+            image.src = "<?=Yii::$app->params['game_image_1']?>";
+            image.onload = function() {
+                var bitmap = new createjs.Bitmap(image);
+                main.name = "bg";
+                main.addChild(bitmap);
+                main.setChildIndex(bitmap, 0);
+                main.update();
+            }
         }
     }
     drawCore(41);
@@ -1761,6 +2022,85 @@ function hideScenes() {
     $('#keycode-form').hide();
     $('#login-form').hide();
 }
+function endGameForInspector() {
+    hideScenes();
+
+    clearInterval(check_status);
+    clearInterval(interval);
+
+    setCookie("end", 1);
+
+    if (end.getChildByName("bg") == null) {
+        // var rect = new createjs.Shape();
+        // rect.graphics.beginFill("<?=Yii::$app->params['background_color']?>").drawRect(0, 0, <?=$scene_width?>, <?=$scene_height?>);
+        // rect.name = "bg";
+        // end.addChild(rect);
+        var image1 = new Image();
+        image1.src = "<?=Yii::$app->params['end_image']?>";
+        image1.onload = function() {
+            var bitmap = new createjs.Bitmap(image1);
+            bitmap.name = "bg";
+            end.addChild(bitmap);
+            end.setChildIndex(bitmap, 0);
+            end.update();
+        }
+    }
+    var image;
+    if (end.getChildByName("winner") == null) {
+        if (is_win == 0) {
+            image = new Image();
+            image.src = "<?=Yii::$app->params['team_mech']?>";
+        } else if (is_win == 1) {
+            if (team_score_1 > team_score_2) {
+                image = new Image();
+                image.src = "<?=Yii::$app->params['team_0']?>";
+            } else if (team_score_1 <= team_score_2) {
+                image = new Image();
+                image.src = "<?=Yii::$app->params['team_1']?>";
+            }
+        }
+        if (image != null) {
+            image.onload = function() {
+                var bitmap = new createjs.Bitmap(image);
+                bitmap.name = "winner";
+                bitmap.x = 260;
+                bitmap.y = 176;
+                end.addChild(bitmap);
+                end.setChildIndex(bitmap, end.getNumChildren()-1);
+                end.update();
+            }
+        }
+    }
+
+    if (end.getChildByName("team_score_1") == null) {
+        var text = new createjs.Text(team_score_1, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+        text.textAlign = 'left';
+        text.name = "team_score_1";
+        text.x = 600;
+        text.y = 453;
+        text.alpha = 0.8;
+        end.addChild(text);
+        end.setChildIndex(text, end.getNumChildren()-1);
+    } else {
+        end.getChildByName("team_score_1").text = team_score_1;
+    }
+
+    if (end.getChildByName("team_score_2") == null) {
+        var text = new createjs.Text(team_score_2, '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_text_color']?>');
+        text.textAlign = 'left';
+        text.name = "team_score_2";
+        text.x = 600;
+        text.y = 540;
+        text.alpha = 0.8;
+        end.addChild(text);
+        end.setChildIndex(text, end.getNumChildren()-1);
+    } else {
+        end.getChildByName("team_score_2").text = team_score_2;
+    }
+
+    end.update();
+    $('#end').show();
+}
 function endGame() {
     hideScenes();
 
@@ -1774,10 +2114,10 @@ function endGame() {
         // rect.graphics.beginFill("<?=Yii::$app->params['background_color']?>").drawRect(0, 0, <?=$scene_width?>, <?=$scene_height?>);
         // rect.name = "bg";
         // end.addChild(rect);
-        end_image = new Image();
-        end_image.src = "<?=Yii::$app->params['end_image']?>";
-        end_image.onload = function() {
-            var bitmap = new createjs.Bitmap(end_image);
+        var image1 = new Image();
+        image1.src = "<?=Yii::$app->params['end_image']?>";
+        image1.onload = function() {
+            var bitmap = new createjs.Bitmap(image1);
             bitmap.name = "bg";
             end.addChild(bitmap);
             end.setChildIndex(bitmap, 0);
@@ -1825,6 +2165,7 @@ function endGame() {
         text.name = "team_score_1";
         text.x = 600;
         text.y = 453;
+        text.alpha = 0.8;
         end.addChild(text);
         end.setChildIndex(text, end.getNumChildren()-1);
     } else {
@@ -1837,6 +2178,7 @@ function endGame() {
         text.name = "team_score_2";
         text.x = 600;
         text.y = 540;
+        text.alpha = 0.8;
         end.addChild(text);
         end.setChildIndex(text, end.getNumChildren()-1);
     } else {
@@ -1861,6 +2203,7 @@ function endGame() {
         text.name = "round_score";
         text.x = 600;
         text.y = 627;
+        text.alpha = 0.8;
         end.addChild(text);
         end.setChildIndex(text, end.getNumChildren()-1);
     } else {
@@ -1934,6 +2277,11 @@ function endGame() {
             //alert(this.id);
             is_open = 1;
             setCookie("end", 0);
+            //////////////////////////////////
+            // ? do it or not
+            // to do: automatically logout if using demo device
+            // otherwise startGame()
+            /////////////////////////////////
             startGame();
         });
         end.addChild(rect);
@@ -1997,8 +2345,6 @@ function getCookie(cname) {
 function loginSubmit () {
     $('#login-form').hide();
     showLoading();
-    /* stop form from submitting normally */
-    event.preventDefault();
 
     $.ajax({
         // method: "POST",
@@ -2020,11 +2366,13 @@ function loginSubmit () {
                 is_login = 0;
                 if (response.data.error == 'new_player') {
                     signupSubmit();
-                } else if (response.data.error == 'emtpy') {
-                    error = "name and password cannot be empty";
+                } else if (response.data.error == 'empty') {
+                    error = "username and password cannot be empty";
                     loginGame();
                 } else if (response.data.error == 'wrong_password') {
                     error = "wrong password";
+                    loginGame();
+                } else {
                     loginGame();
                 }
             }
@@ -2036,8 +2384,6 @@ function loginSubmit () {
 function signupSubmit () {
     $('#login-form').hide();
     showLoading();
-    /* stop form from submitting normally */
-    event.preventDefault();
 
     $.ajax({
         // method: "POST",
@@ -2069,8 +2415,29 @@ function signupSubmit () {
 // secret
 function keycodeSubmit () {
     $('#keycode-form').hide();
-    event.preventDefault();
 
     joinGame();
+}
+
+// finish tutorial
+function finishTutorial () {
+    showLoading();
+
+    $.ajax({
+        // method: "POST",
+        url: "<?= '../../api/web/index.php?r=round/player-ready'; ?>",
+        data: {
+            key: getCookie("key"),
+        },
+        dataType : 'json',
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                //
+            } else {
+                //
+            }
+        }
+    });
 }
 </script>

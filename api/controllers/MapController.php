@@ -10,6 +10,7 @@ use common\models\Bomb;
 use common\models\RoundTeamPlayer;
 use common\models\Triangle;
 use common\models\Team;
+use common\models\Game;
 
 /**
  * Map controller
@@ -89,6 +90,8 @@ class MapController extends ApiController
         $result['data']['team_score_1'] = 0;
         $result['data']['team_score_2'] = 0;
         $result['data']['resource'] = 0;
+        $result['data']['core'] = 0;
+        $result['data']['total_core_score'] = 0;
 
         // handshake
         $key = $this->handshake($key);
@@ -135,6 +138,11 @@ class MapController extends ApiController
                 $result['data']['round_score'] = (int)apcu_fetch('player'.$player->id);
 
                 $result['success'] = true;
+            }
+
+            $game = Game::find()->one();
+            if ($game) {
+                $result['data']['total_core_score'] = $game->core_score;
             }
         }
         //$team_1 = Team::findOne(2);

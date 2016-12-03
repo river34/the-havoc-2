@@ -19,7 +19,8 @@ class AppAsset extends AssetBundle
         'js/jquery.cookie.js',
         'js/easeljs-0.8.2.min.js',
         'js/createjs-2015.11.26.min.js',
-        'js/jquery.min.js',
+        // 'js/jquery.min.js',
+        'js/jquery-1.9.1.js',
     ];
     public $depends = [
         'yii\web\YiiAsset',

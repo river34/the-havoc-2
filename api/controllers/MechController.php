@@ -8,6 +8,7 @@ use common\models\Player;
 use common\models\Team;
 use common\models\RoundTeamPlayer;
 use common\models\Triangle;
+use common\models\Game;
 
 /**
  * Mech controller
@@ -32,6 +33,7 @@ class MechController extends ApiController
         $result['data'] = [];
         // $result['data']['round'] = [];
         $result['data']['round_id'] = 0;
+        $result['data']['core_score'] = 0;
 
         $last_round = Round::find()->orderBy('id DESC')->one();
         if (!$last_round || $last_round->is_end) {
@@ -51,7 +53,7 @@ class MechController extends ApiController
                 //  Mech is ready at the beginning
                 /////////////////////////////////////
                 $round->is_mech_ready = 1;
-                $round->secret = substr(md5(microtime().rand()), 0, 4);
+                $round->secret = sprintf('%04d', rand(0, 9999));
                 $round->save();
                 // $result['data']['round'] = $round;
                 $result['data']['round_id'] = $round->id;
@@ -62,6 +64,11 @@ class MechController extends ApiController
             $last_round->save();
             $result['data']['round_id'] = $last_round->id;
             $result['success'] = true;
+        }
+
+        $game = Game::find()->one();
+        if ($game && $result['success']) {
+            $result['data']['core_score'] = $game->core_score;
         }
 
         $result['query_time'] = microtime(true) - $this->ini_time;
@@ -226,10 +233,16 @@ class MechController extends ApiController
                 foreach ($towers as $element) {
                     try {
                         Yii::$app->db->createCommand("UPDATE map SET mark = ". Yii::$app->params['mark_remain'] ." WHERE mark <> ".Yii::$app->params['mark_core']." AND id = ".$element['tower_id'])->execute();
-                        Yii::$app->db->createCommand("UPDATE round_team_player SET resource = resource + 1 WHERE round_id = ".$round_id ." AND player_id = ".$element['player_id'])->execute();
+                        //Yii::$app->db->createCommand("UPDATE round_team_player SET resource = resource + 1 WHERE round_id = ".$round_id ." AND player_id = ".$element['player_id'])->execute();
                     } catch (Exception $e) {
                         throw new Exception("Error : ".$e);
                         $error = true;
+                    }
+                    $game = Game::find()->one();
+                    $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round_id, 'player_id'=>$element['player_id']])->one();
+                    if ($game && $roundTeamPlayer && $roundTeamPlayer->resource < $game->resource) {
+                        $roundTeamPlayer->resource += 1;
+                        $roundTeamPlayer->save();
                     }
                 }
                 $result['check_time_1'] = microtime(true) - $result['start_time'];

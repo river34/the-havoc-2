@@ -24,9 +24,6 @@ return [
     'mark_default' => 2,
     'mark_remain' => 3,
 
-    // database
-    'resource' => 1,
-
     // fps
     'refresh_rate' => 500,
     'timer_step' => 0.5,

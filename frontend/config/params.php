@@ -25,7 +25,7 @@ return [
     'team_background_color_0' => '#7aadff', // ice
     'team_background_color_1' => '#ff7a7a', // fire
 
-    // images
+    // towers, teams, small elements
     'core' => 'images/towers/icon_coretower_new.png',
     'team_tower_0' => 'images/towers/icon_bluetower.png', // ice
     'team_tower_1' => 'images/towers/icon_redtower_new.png',  // fire
@@ -36,19 +36,21 @@ return [
     'team_mech' => 'images/teams/winner_mech.png',
     'team_0' => 'images/teams/winner_ice.png',
     'team_1' => 'images/teams/winner_fire.png',
-    'select_1' => 'images/teams/select_team_ice.png',
-    'select_1_un' => 'images/teams/select_team_ice_disabled.png',
-    'select_2' => 'images/teams/select_team_fire.png',
-    'select_2_un' => 'images/teams/select_team_fire_disabled.png',
+    'select_0' => 'images/teams/select_team_ice_jury01.png',
+    'select_0_un' => 'images/teams/select_team_ice_enable_jury01.png',
+    'select_1' => 'images/teams/select_team_fire_jury01.png',
+    'select_1_un' => 'images/teams/select_team_fire_enable_jury01.png',
 
     // scenes
-    'start_image' => 'images/scenes/01 start page.jpg',
-    'teamup_image' => 'images/scenes/02 select team.jpg',
-    'bg_image' => 'images/scenes/03.jpg',
-    'game_image' => 'images/scenes/05 game newer.jpg',
-    'end_image' => 'images/scenes/06 result.jpg',
-    'tutorial' => 'images/scenes/Mobile tutorial.png',
-
-    // ui elements
-    'close_btn' => 'images/scenes/close_white.png',
+    'login' => 'images/scenes/1 Log in page jury.jpg',
+    'start_image' => 'images/scenes/2 start page jury_new.jpg',
+    'leaderboard' => 'images/scenes/3 leader board jury_new.jpg',
+    'keycode' => 'images/scenes/4 secret code jury.jpg',
+    'teamup_image' => 'images/scenes/5 select team jury.jpg',
+    'bg_image' => 'images/scenes/6 WAIT Background jury.jpg',
+    'tutorial' => 'images/scenes/6 WAIT tutorial.png',
+    'game_image_0' => 'images/scenes/7 game_ice team_new.jpg',
+    'game_image_1' => 'images/scenes/7 game_fire team_new.jpg',
+    'end_image' => 'images/scenes/8 result jury.jpg',
+    'core_bar' => 'images/scenes/7 game page_core_bar.png',
 ];
