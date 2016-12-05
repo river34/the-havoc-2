@@ -5,6 +5,7 @@ return [
     // font
     // 'font' => 'Impact,fantasy',
     'font' => 'Impact, Verdana, Geneva, "Arial Black", Haettenschweiler, "Franklin Gothic Bold", Charcoal, "Helvetica Inserat", "Bitstream Vera Sans Bold", "sans serif"',
+    'font2' => 'Arial',
 
     // colors
     'main_color' => '#ffb959',
@@ -40,6 +41,12 @@ return [
     'select_0_un' => 'images/teams/select_team_ice_enable_jury01.png',
     'select_1' => 'images/teams/select_team_fire_jury01.png',
     'select_1_un' => 'images/teams/select_team_fire_enable_jury01.png',
+    'wait_0_unready' => 'images/teams/Wait_ice_unready.png',
+    'wait_0_ready' => 'images/teams/Wait_ice_ready.png',
+    'wait_0_empty' => 'images/teams/Wait_ice_empty.png',
+    'wait_1_unready' => 'images/teams/Wait_fire_unready.png',
+    'wait_1_ready' => 'images/teams/Wait_fire_ready.png',
+    'wait_1_empty' => 'images/teams/Wait_fire_empty.png',
 
     // scenes
     'login' => 'images/scenes/1 Log in page jury.jpg',
@@ -47,10 +54,16 @@ return [
     'leaderboard' => 'images/scenes/3 leader board jury_new.jpg',
     'keycode' => 'images/scenes/4 secret code jury.jpg',
     'teamup_image' => 'images/scenes/5 select team jury.jpg',
-    'bg_image' => 'images/scenes/6 WAIT Background jury.jpg',
+    'wait_image' => 'images/scenes/06 WAIT - players_new.jpg',
+    'bg_image' => 'images/scenes/6 tutorial bg.jpg',
     'tutorial' => 'images/scenes/6 WAIT tutorial.png',
-    'game_image_0' => 'images/scenes/7 game_ice team_new.jpg',
-    'game_image_1' => 'images/scenes/7 game_fire team_new.jpg',
+    'tutorial_1' => 'images/scenes/6 tutorial 01_new.jpg',
+    'tutorial_2' => 'images/scenes/6 tutorial 02.jpg',
+    'tutorial_3' => 'images/scenes/6 tutorial 03.jpg',
+    'tutorial_4' => 'images/scenes/6 tutorial 04.jpg',
+    'tutorial_5' => 'images/scenes/6 tutorial 05_new_1.jpg',
+    'game_image_0' => 'images/scenes/7 game_ice team_new_2.jpg',
+    'game_image_1' => 'images/scenes/7 game_fire team_new_2.jpg',
     'end_image' => 'images/scenes/8 result jury.jpg',
     'core_bar' => 'images/scenes/7 game page_core_bar.png',
 ];

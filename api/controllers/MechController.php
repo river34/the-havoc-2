@@ -39,7 +39,7 @@ class MechController extends ApiController
         if (!$last_round || $last_round->is_end) {
             $error = false;
             try {
-                Yii::$app->db->createCommand()->truncateTable('triangle')->execute();
+                // Yii::$app->db->createCommand()->truncateTable('triangle')->execute();
                 Yii::$app->db->createCommand("UPDATE map SET mark = 0, player_id = 0, team_id = 0, score = 0, score_rate = 0, is_sent = 0  WHERE mark <> ".Yii::$app->params['mark_core'])->execute();
                 Yii::$app->db->createCommand("UPDATE team SET is_ready = 0, score = 0")->execute();
             } catch (Exception $e) {
@@ -76,6 +76,35 @@ class MechController extends ApiController
     }
 
     // (unity side)
+    // check if all parties are ready
+    // input: round_id:int
+    public function actionCheckReady() {
+        // input
+        $round_id = empty($this->params['round_id'])?'':$this->params['round_id'];
+
+        // output
+        $result['success'] = false;
+        $result['data'] = [];
+        // $result['data']['round'] = [];
+        $result['data']['is_ready'] = 0;
+        $result['data']['is_start'] = 0;
+
+        if (!empty($round_id)) {
+            $round = Round::findOne($round_id);
+        } else {
+            $round = Round::find()->orderBy('id DESC')->one();
+        }
+        if ($round) {
+            $result['data']['is_ready'] = $round->is_ready;
+            $result['data']['is_start'] = $round->is_ready;
+            $result['success'] = true;
+        }
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
+    // (unity side)
     // replace actionStartBattle
     // input: round_id:int
     public function actionReady() {
@@ -94,7 +123,7 @@ class MechController extends ApiController
         }
         if ($round && $round->is_ready == 0) {
             $round->is_mech_ready = 1;
-            $round->is_ready = $round->is_team_ready * $round->is_mech_ready;
+            $round->is_ready = $round->is_team_ready * $round->is_mech_ready * $round->is_player_ready;
             $round->save();
 
             $result['success'] = true;
@@ -115,6 +144,7 @@ class MechController extends ApiController
         $result['success'] = false;
         $result['data'] = [];
         // $result['data']['round'] = [];
+        $result['data']['is_start'] = 0;
 
         if (!empty($round_id)) {
             $round = Round::findOne($round_id);
@@ -125,6 +155,8 @@ class MechController extends ApiController
             $round->is_start = 1;
             // $result['data']['round'] = $round;
             $round->save();
+            $round->refresh();
+            $result['data']['is_start'] = $round->is_start;
             apcu_clear_cache();
             $result['success'] = true;
         }
@@ -396,32 +428,6 @@ class MechController extends ApiController
             $result['success'] = true;
         }
         */
-
-        $result['query_time'] = microtime(true) - $this->ini_time;
-        return $result;
-    }
-
-    public function actionForceEnd() {
-        // input
-        $round_id = empty($this->params['round_id'])?'':$this->params['round_id'];
-
-        // output
-        $result['success'] = false;
-
-        if (!empty($round_id)) {
-            $round = Round::findOne($round_id);
-        } else {
-            $round = Round::find()->orderBy('id DESC')->one();
-        }
-        if ($round) {
-            // end this round
-            $round->is_end = 1;
-            $round->save();
-
-            // start the next round directly
-            $result = $this::actionStart();
-            $result['success'] = true;
-        }
 
         $result['query_time'] = microtime(true) - $this->ini_time;
         return $result;

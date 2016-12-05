@@ -19,7 +19,6 @@ CREATE TABLE `player` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-
 CREATE TABLE `havoc`.`map` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `mark` tinyint(4) NOT NULL DEFAULT '0',
@@ -47,7 +46,6 @@ CREATE TABLE `round` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
-
 
 
 CREATE TABLE `round_team_player` (
@@ -78,6 +76,7 @@ CREATE TABLE `havoc`.`team` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+
 CREATE TABLE `round_team_player` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `round_id` int(11) NOT NULL,
@@ -105,6 +104,7 @@ CREATE TABLE `triangle` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+
 CREATE TABLE `log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `log` text,
@@ -120,8 +120,7 @@ CREATE TABLE `havoc`.`game` (
   `updated_at` VARCHAR(45) NOT NULL DEFAULT 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
   `created_at` VARCHAR(45) NOT NULL DEFAULT 'CURRENT_TIMESTAMP',
   PRIMARY KEY (`id`));
-
-
+  
 
 TRUNCATE `havoc`.`map`;
 CALL `havoc`.`generate_map`(9);

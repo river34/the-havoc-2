@@ -49,10 +49,12 @@ class MapController extends ApiController
                         $grid->player_id = $player->id;
                         $grid->team_id = $roundTeamPlayer->team_id;
                         $grid->save();
+                        $grid->refresh();
                         $result['data']['grid'] = $grid;
 
                         $roundTeamPlayer->resource -= 1;
                         $roundTeamPlayer->save();
+                        $roundTeamPlayer->refresh();
                         $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
                         $result['data']['resource'] = $roundTeamPlayer->resource;
                         $result['success'] = true;
@@ -136,14 +138,13 @@ class MapController extends ApiController
                 $result['data']['core'] = (int)apcu_fetch('core');
                 $result['data']['triangles'] = apcu_fetch('triangles');
                 $result['data']['round_score'] = (int)apcu_fetch('player'.$player->id);
-
-                $result['success'] = true;
             }
 
             $game = Game::find()->one();
             if ($game) {
                 $result['data']['total_core_score'] = $game->core_score;
             }
+            $result['success'] = true;
         }
         //$team_1 = Team::findOne(2);
         $result['data']['team_score_1'] = (int)apcu_fetch('team2');
