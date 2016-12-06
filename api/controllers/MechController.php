@@ -263,18 +263,24 @@ class MechController extends ApiController
             $error = false;
             if (!empty($towers)) {
                 foreach ($towers as $element) {
-                    try {
-                        Yii::$app->db->createCommand("UPDATE map SET mark = ". Yii::$app->params['mark_remain'] ." WHERE mark <> ".Yii::$app->params['mark_core']." AND id = ".$element['tower_id'])->execute();
-                        //Yii::$app->db->createCommand("UPDATE round_team_player SET resource = resource + 1 WHERE round_id = ".$round_id ." AND player_id = ".$element['player_id'])->execute();
-                    } catch (Exception $e) {
-                        throw new Exception("Error : ".$e);
-                        $error = true;
-                    }
-                    $game = Game::find()->one();
-                    $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round_id, 'player_id'=>$element['player_id']])->one();
-                    if ($game && $roundTeamPlayer && $roundTeamPlayer->resource < $game->resource) {
-                        $roundTeamPlayer->resource += 1;
-                        $roundTeamPlayer->save();
+                    // try {
+                    //     // Yii::$app->db->createCommand("UPDATE map SET mark = ". Yii::$app->params['mark_remain'] ." WHERE mark <> ".Yii::$app->params['mark_core']." AND id = ".$element['tower_id'])->execute();
+                    //     //Yii::$app->db->createCommand("UPDATE round_team_player SET resource = resource + 1 WHERE round_id = ".$round->id ." AND player_id = ".$element['player_id'])->execute();
+                    // } catch (Exception $e) {
+                    //     throw new Exception("Error : ".$e);
+                    //     $error = true;
+                    // }
+
+                    $grid = Map::find()->where(['mark'=>Yii::$app->params['mark_default'], 'id'=>$element['tower_id']])->one();
+                    if ($grid) {
+                        $grid->mark = Yii::$app->params['mark_remain'];
+                        $grid->save();
+                        $game = Game::find()->one();
+                        $roundTeamPlayer = RoundTeamPlayer::find()->where(['round_id'=>$round->id, 'player_id'=>$element['player_id']])->one();
+                        if ($game && $roundTeamPlayer && $roundTeamPlayer->resource < $game->resource) {
+                            $roundTeamPlayer->resource += 1;
+                            $roundTeamPlayer->save();
+                        }
                     }
                 }
                 $result['check_time_1'] = microtime(true) - $result['start_time'];
@@ -291,7 +297,7 @@ class MechController extends ApiController
                             /*
                             $sql = "UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id;
                             $conn->query($sql);
-                            $sql = "UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round_id ." AND player_id = ".$grid->player_id;
+                            $sql = "UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round->id ." AND player_id = ".$grid->player_id;
                             $conn->query($sql);
                             $sql = "UPDATE team SET score = score + ". $element['score']." WHERE id = ".$grid->team_id;
                             $conn->query($sql);
@@ -304,11 +310,11 @@ class MechController extends ApiController
                             else{
                                 $result['add_result']=apcu_inc('player'.$grid->player_id, (int)$element['score']);
                             }
-                            if(!apcu_fetch('round_team'.$round_id.'player'.$grid->player_id)){
-                                apcu_store('round_team'.$round_id.'player'.$grid->player_id, (int)$element['score']);
+                            if(!apcu_fetch('round_team'.$round->id.'player'.$grid->player_id)){
+                                apcu_store('round_team'.$round->id.'player'.$grid->player_id, (int)$element['score']);
                             }
                             else{
-                                apcu_inc('round_team'.$round_id.'player'.$grid->player_id, (int)$element['score']);
+                                apcu_inc('round_team'.$round->id.'player'.$grid->player_id, (int)$element['score']);
                             }
                             if(!apcu_fetch('team'.$grid->team_id)){
                                 apcu_store('team'.$grid->team_id, (int)$element['score']);
@@ -320,7 +326,7 @@ class MechController extends ApiController
 
 
                             // Yii::$app->db->createCommand("UPDATE player SET score = score + ". $element['score'] ." WHERE id = ".$grid->player_id)->execute();
-                            // Yii::$app->db->createCommand("UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round_id ." AND player_id = ".$grid->player_id)->execute();
+                            // Yii::$app->db->createCommand("UPDATE round_team_player SET score = score + ". $element['score'] ." WHERE round_id = ".$round->id ." AND player_id = ".$grid->player_id)->execute();
                             // Yii::$app->db->createCommand("UPDATE team SET score = score + ". $element['score']." WHERE id = ".$grid->team_id)->execute();
                             // Yii::$app->db->createCommand("UPDATE map SET score = score + ". $element['score']. ", score_rate = ". $element['score']." WHERE id = ".$grid->id)->execute();
                         } catch (Exception $e) {

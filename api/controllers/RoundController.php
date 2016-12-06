@@ -140,7 +140,7 @@ class RoundController extends ApiController
         $player = Player::findOne(['key'=>$key]);
 
         if ($player) {
-            $player->key = "0";
+            $player->key = '0';
             $player->save();
             $player->refresh();
             $result['data']['player'] = $player;
@@ -190,7 +190,7 @@ class RoundController extends ApiController
                 MechController::actionStart();
                 $round = Round::find()->orderBy('id DESC')->one();
             }
-            if ($round && (!$check_secret || ($check_secret && ($round->secret == $secret || $round->secret == $shadow || $secret == 'welcome2festival')))) {
+            if ($round && (!$check_secret || ($check_secret && ($round->secret == $secret || $round->secret == $shadow || $secret == 'w2fv')))) {
                 $current_count = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->count();
                 $result['data']['empty_player_slots'] -= $current_count;
                 if ($result['data']['empty_player_slots'] > 0) {
@@ -207,10 +207,10 @@ class RoundController extends ApiController
                     $result['data']['roundTeamPlayer'] = $roundTeamPlayer;
                     $result['success'] = true;
                 }
-                if ($secret == 'welcome2festival') {
+                if ($secret == 'w2fv') {
                     $result['data']['is_festival'] = 1;
                 }
-            } else if ($round && $check_secret && $secret == 'inspector') {
+            } else if ($round && $check_secret && $secret == 'inspector4festival') {
                 $result['data']['is_inspector'] = 1;
                 $result['success'] = true;
             } else if ($round) {
@@ -268,11 +268,17 @@ class RoundController extends ApiController
                 $teams = Team::find()->where(['is_available'=>1])->orderBy('id')->all();
                 $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round_id])->orderBy('id')->all();
                 if ($teams && $roundTeamPlayers) {
+                    $count = 0;
                     $round->is_team_ready = 1;
                     foreach ($teams as $index=>$team) {
                         $round->is_team_ready *= $team->is_ready;
+                        $count += $team->limit;
                     }
-                    $round->is_player_ready = 1;
+                    if (sizeof($roundTeamPlayers) < $count) {
+                        $round->is_player_ready = 0;
+                    } else {
+                        $round->is_player_ready = 1;
+                    }
                     foreach ($roundTeamPlayers as $index=>$roundTeamPlayer) {
                         $round->is_player_ready *= $roundTeamPlayer->is_ready;
                     }
@@ -369,9 +375,11 @@ class RoundController extends ApiController
             if ($round) {
                 $result['data']['is_team_ready'] = $round->is_team_ready;
                 $result['data']['is_mech_ready'] = $round->is_mech_ready;
+                $result['data']['is_ready'] = $round->is_ready;
                 $result['data']['is_start'] = $round->is_start;
                 $result['data']['is_end'] = $round->is_end;
                 $result['data']['round_id'] = $round->id;
+                $result['data']['is_all_player_ready_to_battle'] = $round->is_player_ready;
 
                 $current_count = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->andWhere(['<>', 'team_id', 0])->count();
                 $result['data']['empty_slots'] -= $current_count;
@@ -396,24 +404,15 @@ class RoundController extends ApiController
                     $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->orderBy('id')->all();
                     $result['data']['roundTeamPlayers'] = $roundTeamPlayers;
                     if ($teams && $roundTeamPlayers) {
-                        $round->is_team_ready = 1;
                         foreach ($teams as $index=>$team) {
-                            $round->is_team_ready *= $team->is_ready;
                             $result['data']['team_counts'][$index] = RoundTeamPlayer::find()->where(['round_id'=>$round->id, 'team_id'=>$team->id])->count();
                         }
-                        $round->is_player_ready = 1;
                         foreach ($roundTeamPlayers as $index=>$roundTeamPlayer) {
-                            $round->is_player_ready *= $roundTeamPlayer->is_ready;
                             $result['data']['players'][$index] = Player::find()->where(['id'=>$roundTeamPlayer->player_id])->asArray()->one();
                             $result['data']['players'][$index]['team_id'] = $roundTeamPlayer->team_id;
                             $result['data']['players'][$index]['is_ready'] = $roundTeamPlayer->is_ready;
                             $result['data']['team_players'][$roundTeamPlayer->team_id][] = $result['data']['players'][$index];
                         }
-                        $round->is_ready = $round->is_team_ready * $round->is_mech_ready * $round->is_player_ready;
-                        $round->save();
-                        $round->refresh();
-                        $result['data']['is_ready'] = $round->is_ready;
-                        $result['data']['is_all_player_ready_to_battle'] = $round->is_player_ready;
                     }
                 }
 
@@ -548,11 +547,17 @@ class RoundController extends ApiController
                 $teams = Team::find()->where(['is_available'=>1])->orderBy('id')->all();
                 $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round_id])->orderBy('id')->all();
                 if ($teams && $roundTeamPlayers) {
+                    $count = 0;
                     $round->is_team_ready = 1;
                     foreach ($teams as $index=>$team) {
                         $round->is_team_ready *= $team->is_ready;
+                        $count += $team->limit;
                     }
-                    $round->is_player_ready = 1;
+                    if (sizeof($roundTeamPlayers) < $count) {
+                        $round->is_player_ready = 0;
+                    } else {
+                        $round->is_player_ready = 1;
+                    }
                     foreach ($roundTeamPlayers as $index=>$roundTeamPlayer) {
                         $round->is_player_ready *= $roundTeamPlayer->is_ready;
                     }
@@ -691,11 +696,55 @@ class RoundController extends ApiController
         }
         if ($round) {
             // end this round
+            $round->is_team_ready = 1;
+            $round->is_player_ready = 1;
+            $round->is_ready = 1;
+            $round->is_start = 1;
             $round->is_end = 1;
             $round->save();
 
+            // $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->all();
+            // if ($roundTeamPlayers) {
+                // foreach ($roundTeamPlayers as $roundTeamPlayer) {
+                    // $player = Player::findOne($roundTeamPlayer->player_id);
+                    // $player->key = '0';
+                    // $player->save();
+                // }
+            // }
+
             // start the next round directly
-            $result = $this::actionStart();
+            $result = MechController::actionStart();
+            $result['success'] = true;
+        }
+
+        $result['query_time'] = microtime(true) - $this->ini_time;
+        return $result;
+    }
+
+    // (admin)
+    public function actionForceReady() {
+        // input
+        $round_id = empty($this->params['round_id'])?'':$this->params['round_id'];
+
+        // output
+        $result['success'] = false;
+
+        if (!empty($round_id)) {
+            $round = Round::findOne($round_id);
+        } else {
+            $round = Round::find()->orderBy('id DESC')->one();
+        }
+        if ($round) {
+            $round->is_team_ready = 1;
+            $round->is_player_ready = 1;
+            $round->is_ready = 1;
+            $round->save();
+
+            $roundTeamPlayers = RoundTeamPlayer::find()->where(['round_id'=>$round->id])->all();
+            foreach ($roundTeamPlayers as $roundTeamPlayer) {
+                $roundTeamPlayer->is_ready = 1;
+                $roundTeamPlayer->save();
+            }
             $result['success'] = true;
         }
 
@@ -717,7 +766,7 @@ class RoundController extends ApiController
             $round = Round::find()->orderBy('id DESC')->one();
         }
         if ($round) {
-            // end this round
+            $round->is_team_ready = 1;
             $round->is_player_ready = 1;
             $round->is_ready = 1;
             $round->is_start = 1;
