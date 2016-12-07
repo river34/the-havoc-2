@@ -30,8 +30,8 @@ return [
     'core' => 'images/towers/icon_coretower_new.png',
     'team_tower_0' => 'images/towers/icon_bluetower.png', // ice
     'team_tower_1' => 'images/towers/icon_redtower_new.png',  // fire
-    'my_tower_0' => 'images/towers/icon_bluetower_glow.png', // ice
-    'my_tower_1' => 'images/towers/icon_redtower_new_glow.png',  // fire
+    'my_tower_0' => 'images/towers/icon_bluetower_glow_new_2.png', // ice
+    'my_tower_1' => 'images/towers/icon_redtower_new_glow_new_2.png',  // fire
     'team_remain_0' => 'images/towers/icon_bluetower_remain.png', // ice
     'team_remain_1' => 'images/towers/icon_redtower_remain.png', // fire
     'team_mech' => 'images/teams/winner_mech.png',
@@ -41,12 +41,14 @@ return [
     'select_0_un' => 'images/teams/select_team_ice_enable_jury01.png',
     'select_1' => 'images/teams/select_team_fire_jury01.png',
     'select_1_un' => 'images/teams/select_team_fire_enable_jury01.png',
-    'wait_0_unready' => 'images/teams/Wait_ice_unready.png',
-    'wait_0_ready' => 'images/teams/Wait_ice_ready.png',
+    'wait_0_unready' => 'images/teams/Wait_ice_unready_new.png',
+    'wait_0_ready' => 'images/teams/Wait_ice_ready_new.png',
     'wait_0_empty' => 'images/teams/Wait_ice_empty.png',
-    'wait_1_unready' => 'images/teams/Wait_fire_unready.png',
-    'wait_1_ready' => 'images/teams/Wait_fire_ready.png',
+    'wait_0_ready_you' => 'images/teams/Wait_ice_ready_you.png',
+    'wait_1_unready' => 'images/teams/Wait_fire_unready_new.png',
+    'wait_1_ready' => 'images/teams/Wait_fire_ready_new.png',
     'wait_1_empty' => 'images/teams/Wait_fire_empty.png',
+    'wait_1_ready_you' => 'images/teams/Wait_fire_ready_you.png',
 
     // scenes
     'login' => 'images/scenes/1 Log in page jury.jpg',
@@ -56,15 +58,14 @@ return [
     'teamup_image' => 'images/scenes/5 select team jury.jpg',
     'wait_image' => 'images/scenes/06 WAIT - players_new.jpg',
     'bg_image' => 'images/scenes/6 tutorial bg.jpg',
-    'gap_image' => 'images/scenes/gap scene_new_1.png',
+    'gap_image' => 'images/scenes/gap scene_new_2.png',
     'tutorial' => 'images/scenes/6 WAIT tutorial.png',
-    'tutorial_1' => 'images/scenes/6 tutorial 01_new.jpg',
-    'tutorial_2' => 'images/scenes/6 tutorial 02.jpg',
-    'tutorial_3' => 'images/scenes/6 tutorial 03.jpg',
-    'tutorial_4' => 'images/scenes/6 tutorial 04.jpg',
-    'tutorial_5' => 'images/scenes/6 tutorial 05_new_1.jpg',
-    'game_image_0' => 'images/scenes/7 game_ice team_new_3.jpg',
-    'game_image_1' => 'images/scenes/7 game_fire team_new_3.jpg',
+    'tutorial_1' => 'images/scenes/6 tutorial 01_new_2.jpg',
+    'tutorial_2' => 'images/scenes/6 tutorial 02_new_1.jpg',
+    'tutorial_3' => 'images/scenes/6 tutorial 03_new.jpg',
+    'tutorial_4' => 'images/scenes/6 tutorial 04_new_1.jpg',
+    'game_image_0' => 'images/scenes/7 game_ice team_new_4.jpg',
+    'game_image_1' => 'images/scenes/7 game_fire team_new_4.jpg',
     'end_image' => 'images/scenes/8 result jury.jpg',
     'core_bar' => 'images/scenes/7 game page_core_bar.png',
 ];

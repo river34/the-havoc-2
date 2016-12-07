@@ -143,6 +143,13 @@ class MapController extends ApiController
             $game = Game::find()->one();
             if ($game) {
                 $result['data']['total_core_score'] = $game->core_score;
+                $count = Map::find()->where(['mark'=>Yii::$app->params['mark_default'], 'player_id'=>$player->id])->count();
+                if ($roundTeamPlayer->resource != $game->resource - $count) {
+                    $roundTeamPlayer->resource = $game->resource - $count;
+                    $roundTeamPlayer->save();
+                    $roundTeamPlayer->refresh();
+                    $result['data']['resource'] = $roundTeamPlayer->resource;
+                }
             }
             $result['success'] = true;
         }

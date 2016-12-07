@@ -264,9 +264,11 @@ body {
             "<?=Yii::$app->params['select_1_un']?>",
             "<?=Yii::$app->params['wait_0_unready']?>",
             "<?=Yii::$app->params['wait_0_ready']?>",
+            "<?=Yii::$app->params['wait_0_ready_you']?>",
             "<?=Yii::$app->params['wait_0_empty']?>",
             "<?=Yii::$app->params['wait_1_unready']?>",
             "<?=Yii::$app->params['wait_1_ready']?>",
+            "<?=Yii::$app->params['wait_1_ready_you']?>",
             "<?=Yii::$app->params['wait_1_empty']?>",
             "<?=Yii::$app->params['start_image']?>",
             "<?=Yii::$app->params['teamup_image']?>",
@@ -281,7 +283,6 @@ body {
             "<?=Yii::$app->params['tutorial_2']?>",
             "<?=Yii::$app->params['tutorial_3']?>",
             "<?=Yii::$app->params['tutorial_4']?>",
-            "<?=Yii::$app->params['tutorial_5']?>",
             "<?=Yii::$app->params['keycode']?>",
             "<?=Yii::$app->params['leaderboard']?>",
             "<?=Yii::$app->params['login']?>",
@@ -421,11 +422,31 @@ function checkStatus () {
                 empty_slots = response.data.empty_slots;
                 empty_player_slots = response.data.empty_player_slots;
                 round = response.data.round;
-                round_id = response.data.round_id;
                 round_score = response.data.round_score;
                 resource = response.data.resource;
                 players = response.data.players;
                 team_players = response.data.team_players;
+                if (getCookie("is_inspector")) {
+                    if (round_id != response.data.round_id) {
+                        main.removeChild(main.getChildByName("wait"));
+                        console.log('is_inspector, is_end');
+                        // clearInterval(check_status); check_status = false;
+                        // clearInterval(interval); interval = false;
+                        // location.reload();
+                        drawGap();
+                        clearInterval(interval); interval = false;
+                        if (check_status == false) {
+                            check_status = setInterval(function(){
+                                if (not_able_to_request > 0) {
+                                    return;
+                                }
+                                not_able_to_request = 1;
+                                checkStatus();
+                            }, <?=Yii::$app->params['refresh_rate']?>);
+                        }
+                    }
+                }
+                round_id = response.data.round_id;
             } else {
                 is_login = 1;
                 is_open = 0;
@@ -527,7 +548,7 @@ function init_state() {
         if (is_player_ready_to_battle == 0) {
             console.log("tutorialGame");
             tutorialGame();
-            drawText('Get ready...');
+            drawText(name + ', get ready...');
         } else if (is_all_player_ready_to_battle == 0) {
             waitGame();
             drawText(name + ', wait for other players');
@@ -574,23 +595,6 @@ function init_state() {
     }
 
     if (is_player_ready && is_player_in_team && is_team_ready && is_ready && is_start && is_end) {
-        if (getCookie("is_inspector")) {
-            clearInterval(check_status); check_status = false;
-            clearInterval(interval); interval = false;
-            location.reload();
-            // drawGap();
-            // clearInterval(interval); interval = false;
-            // if (check_status == false) {
-            //     check_status = setInterval(function(){
-            //         if (not_able_to_request > 0) {
-            //             return;
-            //         }
-            //         not_able_to_request = 1;
-            //         checkStatus();
-            //     }, <?=Yii::$app->params['refresh_rate']?>);
-            // }
-            // return;
-        }
         setCookie("is_started", 0);
         setCookie("start_time", 0);
         setCookie("end_time", 0);
@@ -642,9 +646,9 @@ function TeamUpGame() {
                 if (rect == null) {
                     color = colors[i];
                     rect = new createjs.Shape();
-                    rect.graphics.beginFill(color).drawRect(0, 0, <?=$scene_width?>/teams.length, <?=$scene_height/2?>);
-                    rect.x = <?=$scene_width/2?> - i*<?=$scene_width?>/teams.length;
-                    rect.y = <?=$scene_height/2?>;
+                    rect.graphics.beginFill(color).drawRect(0, 0, 400, 400);
+                    rect.x = 650;
+                    rect.y = 600;
                     rect.alpha = 0.01;
                     rect.name = "team_"+teams[i]['id'];
                     rect.id = teams[i]['id'];
@@ -654,7 +658,6 @@ function TeamUpGame() {
                 teamup.setChildIndex(rect, teamup.getNumChildren()-1);
                 rect.on("click", function(event) {
                     console.log('team_id: ' + this.id);
-                    setCookie('team_id', '' + this.id);
                     selectTeam(this.id);
                 });
             }
@@ -663,9 +666,9 @@ function TeamUpGame() {
                 if (rect2 == null) {
                     color = colors[i];
                     rect2 = new createjs.Shape();
-                    rect2.graphics.beginFill(color).drawRect(0, 0, <?=$scene_width?>/teams.length, <?=$scene_height/2?>);
-                    rect2.x = <?=$scene_width/2?> - i*<?=$scene_width?>/teams.length;
-                    rect2.y = <?=$scene_height/2?>;
+                    rect2.graphics.beginFill(color).drawRect(0, 0, 400, 400);
+                    rect2.x = 150;
+                    rect2.y = 600;
                     rect2.alpha = 0.01;
                     rect2.name = "team_"+teams[i]['id'];
                     rect2.id = teams[i]['id'];
@@ -675,7 +678,6 @@ function TeamUpGame() {
                 teamup.setChildIndex(rect2, teamup.getNumChildren()-1);
                 rect2.on("click", function(event) {
                     console.log('team_id: ' + this.id);
-                    setCookie('team_id', '' + this.id);
                     selectTeam(this.id);
                 });
             }
@@ -772,8 +774,8 @@ function tutorialGame() {
         current_tutorial = 1;
     } else if (current_tutorial < 1) {
         current_tutorial = 1;
-    } else if (current_tutorial > 5) {
-        current_tutorial = 5;
+    } else if (current_tutorial > 4) {
+        current_tutorial = 4;
     }
 
     var tutorials = main.getChildByName("tutorials");
@@ -785,7 +787,7 @@ function tutorialGame() {
     }
     main.setChildIndex(tutorials, main.getNumChildren()-1);
 
-    if (current_tutorial >= 1 && current_tutorial <= 5) {
+    if (current_tutorial >= 1 && current_tutorial <= 4) {
         if (tutorials.getChildByName("tutorial_"+current_tutorial) == null) {
             var cont = new createjs.Container();
             cont.name = "tutorial_"+current_tutorial;
@@ -803,9 +805,6 @@ function tutorialGame() {
                 } else if (current_tutorial == 4) {
                     image = new Image();
                     image.src = "<?=Yii::$app->params['tutorial_4']?>";
-                } else if (current_tutorial == 5) {
-                    image = new Image();
-                    image.src = "<?=Yii::$app->params['tutorial_5']?>";
                 }
                 if (image) {
                     image.onload = function() {
@@ -824,7 +823,7 @@ function tutorialGame() {
         }
     }
 
-    if (current_tutorial > 1 && current_tutorial <= 5) {
+    if (current_tutorial > 1 && current_tutorial <= 4) {
         if (tutorials.getChildByName("previous") == null) {
             var rect = new createjs.Shape();
             rect.graphics.beginFill("#ff0000").drawRect(0, 0, 100, 100);
@@ -842,7 +841,7 @@ function tutorialGame() {
         tutorials.removeChild(tutorials.getChildByName("previous"));
     }
 
-    if (current_tutorial >= 1 && current_tutorial < 5) {
+    if (current_tutorial >= 1 && current_tutorial < 4) {
         if (tutorials.getChildByName("next") == null) {
             var rect2 = new createjs.Shape();
             rect2.graphics.beginFill("#ffff00").drawRect(0, 0, 100, 100);
@@ -860,7 +859,7 @@ function tutorialGame() {
         tutorials.removeChild(tutorials.getChildByName("next"));
     }
 
-    if (current_tutorial >= 5) {
+    if (current_tutorial >= 4) {
         if (tutorials.getChildByName("finish") == null) {
             var rect3 = new createjs.Shape();
             rect3.graphics.beginFill("#0000ff").drawRect(0, 0, 200, 100);
@@ -982,25 +981,25 @@ function waitGame() {
                 // console.log(players[j]);
                 if (players[j]) {
                     // name
-                    if (wait_players.getChildByName(i+"_name_"+j) == null) {
+                    if (wait_players.getChildByName("name_"+i+"_"+j) == null) {
                         var text = new createjs.Text(players[j]['name'], '20px <?=Yii::$app->params['font2']?>', '<?=Yii::$app->params['main_text_color']?>');
                         text.textAlign = 'center';
-                        text.name = i+"_name_"+j;
+                        text.name = "name_"+i+"_"+j;
                         if (players[j]['team_id'] == 2) { // ice
                             if (j<3) {
-                                text.x = 275 + j*130;
-                                text.y = 751;
+                                text.x = 281 + j*130;
+                                text.y = 745;
                             } else if (j<6) {
-                                text.x = 215 + (j-3)*130;
-                                text.y = 914;
+                                text.x = 221 + (j-3)*130;
+                                text.y = 908;
                             }
                         } else if (players[j]['team_id'] == 3) { // fire
                             if (j<3) {
-                                text.x = 726 + j*130;
-                                text.y = 375;
+                                text.x = 732 + j*130;
+                                text.y = 369;
                             } else if (j<6) {
-                                text.x = 660 + (j-3)*130;
-                                text.y = 535;
+                                text.x = 666 + (j-3)*130;
+                                text.y = 529;
                             }
                         }
                         wait_players.addChild(text);
@@ -1012,42 +1011,104 @@ function waitGame() {
                         wait_players.removeChild(wait_players.getChildByName("unready_"+i+"_"+j));
                         if (wait_players.getChildByName("ready_"+i+"_"+j) == null) {
                             if (players[j]['team_id'] == 2) { // ice
-                                var image_1 = new Image();
-                                image_1.team = i;
-                                image_1.id = j;
-                                image_1.src = "<?=Yii::$app->params['wait_0_ready']?>";
-                                image_1.onload = function() {
-                                    var bitmap = new createjs.Bitmap(image_1);
-                                    bitmap.name = "ready_"+this.team+"_"+this.id;
-                                    wait_players.addChild(bitmap);
-                                    wait_players.setChildIndex(bitmap,wait_players.getNumChildren()-1);
-                                    if (this.id<3) {
-                                        bitmap.x = 225 + this.id*130;
-                                        bitmap.y = 627;
-                                    } else if (this.id<6) {
-                                        bitmap.x = 165 + (this.id-3)*130;
-                                        bitmap.y = 790;
+                                if (players[j]['id'] == player_id) {
+                                    var image_1;
+                                    image_1 = new Image();
+                                    image_1.src = "<?=Yii::$app->params['wait_0_ready_you']?>";
+                                    image_1.team = i;
+                                    image_1.id = j;
+                                    image_1.onload = function() {
+                                        var bitmap = new createjs.Bitmap(image_1);
+                                        bitmap.name = "ready_"+this.team+"_"+this.id;
+                                        wait_players.addChild(bitmap);
+                                        wait_players.setChildIndex(bitmap,wait_players.getNumChildren()-1);
+                                        if (this.id<3) {
+                                            bitmap.x = 225 + this.id*130;
+                                            bitmap.y = 627;
+                                        } else if (this.id<6) {
+                                            bitmap.x = 165 + (this.id-3)*130;
+                                            bitmap.y = 790;
+                                        }
+                                        var string = wait_players.getChildByName("name_"+this.team+"_"+this.id);
+                                        if (string) {
+                                            wait_players.setChildIndex(string, wait_players.getNumChildren()-1);
+                                        }
+                                        main.update();
                                     }
-                                    main.update();
+                                } else {
+                                    var image_2;
+                                    image_2 = new Image();
+                                    image_2.src = "<?=Yii::$app->params['wait_0_ready']?>";
+                                    image_2.team = i;
+                                    image_2.id = j;
+                                    image_2.onload = function() {
+                                        var bitmap = new createjs.Bitmap(image_2);
+                                        bitmap.name = "ready_"+this.team+"_"+this.id;
+                                        wait_players.addChild(bitmap);
+                                        wait_players.setChildIndex(bitmap,wait_players.getNumChildren()-1);
+                                        if (this.id<3) {
+                                            bitmap.x = 225 + this.id*130;
+                                            bitmap.y = 627;
+                                        } else if (this.id<6) {
+                                            bitmap.x = 165 + (this.id-3)*130;
+                                            bitmap.y = 790;
+                                        }
+                                        var string = wait_players.getChildByName("name_"+this.team+"_"+this.id);
+                                        if (string) {
+                                            wait_players.setChildIndex(string, wait_players.getNumChildren()-1);
+                                        }
+                                        main.update();
+                                    }
                                 }
                             } else if (players[j]['team_id'] == 3) { // fire
-                                var image_2 = new Image();
-                                image_2.team = i;
-                                image_2.id = j;
-                                image_2.src = "<?=Yii::$app->params['wait_1_ready']?>";
-                                image_2.onload = function() {
-                                    var bitmap = new createjs.Bitmap(image_2);
-                                    bitmap.name = "ready_"+this.team+"_"+this.id;
-                                    wait_players.addChild(bitmap);
-                                    wait_players.setChildIndex(bitmap,wait_players.getNumChildren()-1);
-                                    if (this.id<3) {
-                                        bitmap.x = 676 + this.id*130;
-                                        bitmap.y = 251;
-                                    } else if (this.id<6) {
-                                        bitmap.x = 610 + (this.id-3)*130;
-                                        bitmap.y = 411;
+                                if (players[j]['id'] == player_id) {
+                                    var image_3;
+                                    image_3 = new Image();
+                                    image_3.src = "<?=Yii::$app->params['wait_1_ready_you']?>";
+                                    image_3.team = i;
+                                    image_3.id = j;
+                                    image_3.onload = function() {
+                                        var bitmap = new createjs.Bitmap(image_3);
+                                        bitmap.name = "ready_"+this.team+"_"+this.id;
+                                        wait_players.addChild(bitmap);
+                                        wait_players.setChildIndex(bitmap,wait_players.getNumChildren()-1);
+                                        if (this.id<3) {
+                                            bitmap.x = 676 + this.id*130;
+                                            bitmap.y = 251;
+                                        } else if (this.id<6) {
+                                            bitmap.x = 610 + (this.id-3)*130;
+                                            bitmap.y = 411;
+                                        }
+                                        var string = wait_players.getChildByName("name_"+this.team+"_"+this.id);
+                                        if (string) {
+                                            wait_players.setChildIndex(string, wait_players.getNumChildren()-1);
+                                        }
+                                        main.update();
                                     }
-                                    main.update();
+                                } else {
+                                    var image_4;
+                                    image_4 = new Image();
+                                    image_4.src = "<?=Yii::$app->params['wait_1_ready']?>";
+                                    image_4.team = i;
+                                    image_4.id = j;
+                                    image_4.onload = function() {
+                                        var bitmap = new createjs.Bitmap(image_4);
+                                        bitmap.name = "ready_"+this.team+"_"+this.id;
+                                        wait_players.addChild(bitmap);
+                                        wait_players.setChildIndex(bitmap,wait_players.getNumChildren()-1);
+                                        if (this.id<3) {
+                                            bitmap.x = 676 + this.id*130;
+                                            bitmap.y = 251;
+                                        } else if (this.id<6) {
+                                            bitmap.x = 610 + (this.id-3)*130;
+                                            bitmap.y = 411;
+                                        }
+                                        var string = wait_players.getChildByName("name_"+this.team+"_"+this.id);
+                                        if (string) {
+                                            wait_players.setChildIndex(string, wait_players.getNumChildren()-1);
+                                        }
+                                        main.update();
+                                    }
                                 }
                             }
                         }
@@ -1071,6 +1132,10 @@ function waitGame() {
                                         bitmap.x = 165 + (this.id-3)*130;
                                         bitmap.y = 790;
                                     }
+                                    var string = wait_players.getChildByName("name_"+this.team+"_"+this.id);
+                                    if (string) {
+                                        wait_players.setChildIndex(string, wait_players.getNumChildren()-1);
+                                    }
                                     main.update();
                                 }
                             } else if (players[j]['team_id'] == 3) { // fire
@@ -1089,6 +1154,10 @@ function waitGame() {
                                     } else if (this.id<6) {
                                         bitmap.x = 610 + (this.id-3)*130;
                                         bitmap.y = 411;
+                                    }
+                                    var string = wait_players.getChildByName("name_"+this.team+"_"+this.id);
+                                    if (string) {
+                                        wait_players.setChildIndex(string, wait_players.getNumChildren()-1);
                                     }
                                     main.update();
                                 }
@@ -1217,6 +1286,7 @@ function selectTeam(team_id) {
                     team_id = response.data.roundTeamPlayer.team_id;
                     is_player_in_team = 1;
                     $('#teamup').hide();
+                    setCookie('team_id', '' + team_id);
                 } else {
                     error_code = 'teamup_error';
                 }
@@ -1282,12 +1352,15 @@ function updateMap() {
             if (is_end) {
                 if (getCookie("is_inspector")) {
                     location.reload();
+                    // checkStatus();
+                    // break;
+                } else {
+                    showLoading();
+                    setTimeout(function(){
+                        endGame();
+                        hideLoading();
+                    }, 1000);
                 }
-                showLoading();
-                setTimeout(function(){
-                    endGame();
-                    hideLoading();
-                }, 1000);
             }
         }
     });
@@ -1316,6 +1389,7 @@ function joinGame(shadow) {
                     return;
                 }
                 location.reload();
+                // checkStatus();
             } else {
                 if (response.data.error == 'wrong_secret') {
                     error = "wrong secret";
@@ -1733,20 +1807,20 @@ function startGame() {
         }
     }
 
-    if (is_open == 0) {
-        if (start.getChildByName('start_hint') == null) {
-            var text = new createjs.Text('wait for the current round to stop', '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
-            text.textAlign = 'center';
-            text.name = 'start_hint';
-            text.x = <?=$scene_width/2?>;
-            text.y = 930;
-            start.addChild(text);
-        }
-    } else if (is_open) {
-        if (start.getChildByName('start_hint')) {
-            start.removeChild(start.getChildByName('start_hint'));
-        }
-    }
+    // if (is_open == 0) {
+    //     if (start.getChildByName('start_hint') == null) {
+    //         var text = new createjs.Text('wait for the current round to stop', '30px <?=Yii::$app->params['font']?>', '<?=Yii::$app->params['main_color']?>');
+    //         text.textAlign = 'center';
+    //         text.name = 'start_hint';
+    //         text.x = <?=$scene_width/2?>;
+    //         text.y = 930;
+    //         start.addChild(text);
+    //     }
+    // } else if (is_open) {
+    //     if (start.getChildByName('start_hint')) {
+    //         start.removeChild(start.getChildByName('start_hint'));
+    //     }
+    // }
 
     main.update();
 }
